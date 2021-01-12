@@ -1,0 +1,1 @@
+# hapi-audit-rest
