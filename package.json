@@ -4,18 +4,19 @@
   "description": "A NPM package to audit rest API calls on a Hapi.js server",
   "main": "build/index.js",
   "scripts": {
-    "build": "babel ./src -d ./lib",
+    "build": "node_modules/.bin/babel ./src -d ./lib",
     "lint": "node_modules/.bin/eslint --ext .js ./src",
     "lint:fix": "node_modules/.bin/eslint --ext .js ./src --fix",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepublishOnly": "npm run build"
   },
   "husky": {
     "hooks": {
-      "pre-commit": "lint-staged"
+      "pre-commit": "lint-staged" 
     }
   },
   "lint-staged": {
-    "src/**/*.{js,jsx}": [
+    "src/**/*.{js}": [
       "node_modules/.bin/eslint --fix"
     ]
   },
