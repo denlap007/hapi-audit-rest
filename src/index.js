@@ -264,7 +264,8 @@ exports.plugin = {
             entityId: getEntityId(entityKeys, id),
             username,
             data: payload,
-            action: action.toUpperCase(),
+            action,
+            type: action,
           });
         }
 

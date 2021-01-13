@@ -1,10 +1,10 @@
-import { AUDIT_OUTCOME } from "../enums";
+import { AUDIT_OUTCOME, AUDIT_TYPE } from "../enums";
 import AuditActionBody from "./AuditActionBody";
 
 class AuditAction {
   constructor(input) {
     const {
-      type,
+      type = AUDIT_TYPE.SEARCH,
       entity,
       entityId,
       action,

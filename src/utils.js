@@ -74,9 +74,11 @@ export const createActionRecord = ({
   username,
   data,
   action,
+  type,
 }) =>
   new AuditAction({
     application: clientId,
+    type,
     entity,
     entityId,
     username,
