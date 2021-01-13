@@ -22,6 +22,7 @@ export default (options) => {
     emitEventName,
     cacheExpiresIn,
     isAuditable,
+    eventHanler,
   } = options;
 
   // booleans
@@ -83,6 +84,9 @@ export default (options) => {
   if (isDefined(isAuditable) && typeof isAuditable !== "function") {
     throwTypeError("isAuditable", "function", typeof isAuditable);
   }
+  if (isDefined(eventHanler) && typeof diffFunc !== "function") {
+    throwTypeError("diffFunc", "function", typeof diffFunc);
+  }
 
   // mandatory
   if (diffFunc == null) {
@@ -91,6 +95,8 @@ export default (options) => {
     throwMandatoryError("clientId");
   } else if (emitEventName == null) {
     throwMandatoryError("emitEventName");
+  } else if (eventHanler == null) {
+    throwMandatoryError("eventHanler");
   }
 
   // format
