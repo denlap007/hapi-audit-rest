@@ -14,6 +14,7 @@ import {
   createActionRecord,
   getEntityId,
   gotResponseData,
+  shouldAuditRequest,
 } from "./utils";
 import validateSchema from "./validations";
 
@@ -22,7 +23,7 @@ exports.plugin = {
     hapi: ">=17.0.0",
   },
   name: "auditing",
-  version: "1.0.0",
+  version: "1.5.0",
   async register(server, options) {
     // validate options schema
     validateSchema(options);
@@ -31,6 +32,7 @@ exports.plugin = {
     const ID_PARAM_DEFAULT = "id";
     const {
       disableOnRoutes, // TODO
+      auditGetRequests = true,
       showErrorsOnStdErr = true,
       diffFunc = () => [{}, {}],
       skipDiffForEndpointProps = {},
@@ -309,7 +311,7 @@ exports.plugin = {
           });
         }
 
-        if (method.toLowerCase() !== "get") {
+        if (shouldAuditRequest(method, auditGetRequests)) {
           emitAuditEvent(rec, routeEndpoint);
         }
       } catch (error) {

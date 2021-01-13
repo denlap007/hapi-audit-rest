@@ -102,3 +102,7 @@ export const getEntityId = (entityKeys, id, data) => {
 };
 
 export const gotResponseData = (data) => data != null;
+
+export const shouldAuditRequest = (method, auditGetRequests) =>
+  (method.toLowerCase() === "get" && auditGetRequests) ||
+  method.toLowerCase() !== "get";
