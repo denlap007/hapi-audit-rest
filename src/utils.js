@@ -100,3 +100,5 @@ export const getEntityId = (entityKeys, id, data) => {
 
   return entityId;
 };
+
+export const gotResponseData = (data) => data != null;
