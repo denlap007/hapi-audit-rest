@@ -23,6 +23,7 @@ export default (options) => {
     cacheExpiresIn,
     isAuditable,
     eventHanler,
+    auditGetRequests,
   } = options;
 
   // booleans
@@ -34,6 +35,9 @@ export default (options) => {
   }
   if (isDefined(disableCache) && typeof disableCache !== "boolean") {
     throwTypeError("disableCache", "boolean", typeof disableCache);
+  }
+  if (isDefined(auditGetRequests) && typeof auditGetRequests !== "boolean") {
+    throwTypeError("auditGetRequests", "boolean", typeof auditGetRequests);
   }
 
   // strings
