@@ -36,6 +36,9 @@ exports.plugin = {
       emitEventName = "auditing",
       cacheExpiresIn = FIVE_MINS_MSECS,
       isAuditable = (path, method) => path.startsWith("/api"),
+      eventHanler = (data) => {
+        console.log("Emitted Audit Record", JSON.stringify(data, null, 4));
+      },
     } = options;
 
     // initialize caches
@@ -45,10 +48,8 @@ exports.plugin = {
     // register event
     server.event(emitEventName);
 
-    // for DEBUG - TODO: add debug flag
-    // server.events.on(emitEventName, (data) => {
-    //   console.log("===> Emitted Audit Record", JSON.stringify(data, null, 4));
-    // });
+    // register event handler
+    server.events.on(emitEventName, eventHanler);
 
     const handleError = (request, error) => {
       if (showErrorsOnStdErr) {
