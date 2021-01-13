@@ -13,10 +13,14 @@ import {
   createMutationRecord,
   createActionRecord,
   getEntityId,
+  gotResponseData,
 } from "./utils";
 import validateSchema from "./validations";
 
 exports.plugin = {
+  requirements: {
+    hapi: ">=17.0.0",
+  },
   name: "auditing",
   version: "1.0.0",
   async register(server, options) {
@@ -177,7 +181,7 @@ exports.plugin = {
             method,
             clientId,
             entity: getEntity(entity, pathname),
-            entityId: getEntityId(entityKeys, id, newValues),
+            entityId: getEntityId(entityKeys, id, newVals),
             username,
             originalValues,
             newValues,
@@ -261,7 +265,7 @@ exports.plugin = {
           rec = createActionRecord({
             clientId,
             entity: getEntity(entity, pathname),
-            entityId: getEntityId(entityKeys, id),
+            entityId: getEntityId(entityKeys, id, payload),
             username,
             data: payload,
             action,
@@ -279,7 +283,7 @@ exports.plugin = {
           rec = createActionRecord({
             clientId,
             entity: getEntity(entity, pathname),
-            entityId: getEntityId(entityKeys, id),
+            entityId: getEntityId(entityKeys, id, source),
             username,
             data: query,
             action: (action && action.toUpperCase()) || AUDIT_TYPE.SEARCH,
@@ -290,19 +294,24 @@ exports.plugin = {
         ) {
           rec = auditValues.get(routeEndpoint);
         } else if (isCreate(method) && isSuccessfulResponse(statusCode)) {
-          const id = payload[idParam];
+          const id = gotResponseData(source)
+            ? source[idParam]
+            : payload[idParam];
+          const data = gotResponseData(source) ? source : payload;
 
           rec = createMutationRecord({
             method,
             clientId,
             entity: getEntity(entity, pathname),
-            entityId: getEntityId(entityKeys, id, payload),
+            entityId: getEntityId(entityKeys, id, data),
             username,
-            newValues: payload,
+            newValues: data,
           });
         }
 
-        emitAuditEvent(rec, routeEndpoint);
+        if (method.toLowerCase() !== "get") {
+          emitAuditEvent(rec, routeEndpoint);
+        }
       } catch (error) {
         handleError(request, error);
       }
