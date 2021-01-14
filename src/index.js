@@ -22,8 +22,8 @@ exports.plugin = {
   requirements: {
     hapi: ">=17.0.0",
   },
-  name: "auditing",
-  version: "1.5.0",
+  name: "hapi-audit-rest",
+  version: "1.6.0",
   async register(server, options) {
     // validate options schema
     validateSchema(options);
