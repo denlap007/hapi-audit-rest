@@ -23,7 +23,7 @@ exports.plugin = {
     hapi: ">=17.0.0",
   },
   name: "hapi-audit-rest",
-  version: "1.6.0",
+  version: "1.7.0",
   async register(server, options) {
     // validate options schema
     validateSchema(options);
@@ -35,7 +35,6 @@ exports.plugin = {
       auditGetRequests = true,
       showErrorsOnStdErr = true,
       diffFunc = () => [{}, {}],
-      skipDiffForEndpointProps = {},
       disableCache = false,
       clientId = "client-app",
       sidUsernameAttribute = "userName",
@@ -88,6 +87,7 @@ exports.plugin = {
           idParam = ID_PARAM_DEFAULT,
           getPath,
           getPathId,
+          skipDiff = [],
         } = auditing;
 
         const username = request.auth.isAuthenticated
@@ -170,10 +170,16 @@ exports.plugin = {
             );
           }
 
-          (skipDiffForEndpointProps[routeEndpoint] || []).forEach((key) => {
-            delete oldVals[key];
-            delete newVals[key];
-          });
+          if (Array.isArray(skipDiff)) {
+            skipDiff.forEach((key) => {
+              delete oldVals[key];
+              delete newVals[key];
+            });
+          } else if (skipDiff != null) {
+            throw new Error(
+              `Invalid type for option: [skipDiff]. Expected array got ${typeof skipDiff}`
+            );
+          }
           // console.log("===> oldVals", JSON.stringify(oldVals, null, 4));
           // console.log("===> newVals", JSON.stringify(newVals, null, 4));
 
