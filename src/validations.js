@@ -15,7 +15,6 @@ export default (options) => {
     // disableOnRoutes,
     showErrorsOnStdErr,
     diffFunc,
-    skipDiffForEndpointProps,
     disableCache,
     clientId,
     sidUsernameAttribute,
@@ -65,22 +64,6 @@ export default (options) => {
     throwTypeError("cacheExpiresIn", "number", typeof cacheExpiresIn);
   }
 
-  // object
-  if (
-    isDefined(skipDiffForEndpointProps) &&
-    !(
-      typeof skipDiffForEndpointProps === "object" &&
-      skipDiffForEndpointProps !== null &&
-      !Array.isArray(skipDiffForEndpointProps)
-    )
-  ) {
-    throwTypeError(
-      "skipDiffForEndpointProps",
-      "object",
-      skipDiffForEndpointProps
-    );
-  }
-
   // functions
   if (isDefined(diffFunc) && typeof diffFunc !== "function") {
     throwTypeError("diffFunc", "function", typeof diffFunc);
@@ -101,15 +84,5 @@ export default (options) => {
     throwMandatoryError("emitEventName");
   } else if (eventHanler == null) {
     throwMandatoryError("eventHanler");
-  }
-
-  // format
-  if (
-    skipDiffForEndpointProps != null &&
-    Object.values(skipDiffForEndpointProps).some((val) => !Array.isArray(val))
-  ) {
-    throw new Error(
-      "Invalid type. All values of field 'skipDiffForEndpointProps' must be of type Array"
-    );
   }
 };
