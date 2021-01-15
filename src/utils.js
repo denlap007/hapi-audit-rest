@@ -1,3 +1,5 @@
+import stream from "stream";
+
 import AuditAction from "./dtos/AuditAction";
 import AuditMutation from "./dtos/AuditMutation";
 
@@ -48,7 +50,7 @@ export const isSuccessfulResponse = (code) =>
   parseInt(code, 10) >= 200 &&
   parseInt(code, 10) <= 299;
 
-export const createMutationRecord = ({
+export const createMutation = ({
   method,
   clientId,
   entity,
@@ -67,7 +69,7 @@ export const createMutationRecord = ({
     newValues,
   });
 
-export const createActionRecord = ({
+export const createAction = ({
   clientId,
   entity,
   entityId,
@@ -103,6 +105,26 @@ export const getEntityId = (entityKeys, id, data) => {
 
 export const gotResponseData = (data) => data != null;
 
-export const shouldAuditRequest = (method, auditGetRequests) =>
-  (method.toLowerCase() === "get" && auditGetRequests) ||
-  method.toLowerCase() !== "get";
+export const shouldAuditRequest = (method, auditGetRequests, injected) =>
+  injected == null &&
+  ((method.toLowerCase() === "get" && auditGetRequests) ||
+    method.toLowerCase() !== "get");
+
+export const removeProps = (left, right, props) => {
+  if (Array.isArray(props)) {
+    props.forEach((key) => {
+      delete left[key];
+      delete right[key];
+    });
+  } else if (props != null) {
+    throw new Error(
+      `Invalid type for option: [skipDiff]. Expected array got ${typeof skipDiff}`
+    );
+  }
+  return [left, right];
+};
+
+export const isStream = (input) => input instanceof stream.Readable;
+
+export const getUser = (req, sidUsernameAttribute) =>
+  req.auth.isAuthenticated ? req.auth.credentials[sidUsernameAttribute] : null;
