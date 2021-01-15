@@ -10,11 +10,14 @@ import {
   getEntity,
   toEndpoint,
   isSuccessfulResponse,
-  createMutationRecord,
-  createActionRecord,
+  createMutation,
+  createAction,
   getEntityId,
   gotResponseData,
   shouldAuditRequest,
+  removeProps,
+  isStream,
+  getUser,
 } from "./utils";
 import validateSchema from "./validations";
 
@@ -23,7 +26,7 @@ exports.plugin = {
     hapi: ">=17.0.0",
   },
   name: "hapi-audit-rest",
-  version: "1.7.0",
+  version: "1.8.0",
   async register(server, options) {
     // validate options schema
     validateSchema(options);
@@ -76,6 +79,15 @@ exports.plugin = {
       }
     };
 
+    const fetchValues = async ({ headers, auth, url: { pathname } }) =>
+      server.inject({
+        method: "GET",
+        url: pathname,
+        headers: { ...headers, injected: "true" },
+        auth,
+      });
+
+    // ------------------------------- PRE-HANDLER ------------------------- //
     server.ext("onPreHandler", async (request, h) => {
       try {
         const { [this.name]: auditing = {} } = request.route.settings.plugins;
@@ -90,17 +102,13 @@ exports.plugin = {
           skipDiff = [],
         } = auditing;
 
-        const username = request.auth.isAuthenticated
-          ? request.auth.credentials[sidUsernameAttribute]
-          : null;
+        const username = getUser(request, sidUsernameAttribute);
 
         const {
           url: { pathname },
           method,
-          query,
           params,
           payload,
-          route: { path: routPath },
         } = request;
 
         /**
@@ -119,48 +127,31 @@ exports.plugin = {
         }
 
         const id = params[idParam];
-        const getEndpoint = toEndpoint("get", routPath, getPath);
-        const routeEndpoint = toEndpoint(method, routPath);
-
-        const fetchOldVals = async () => {
-          //   console.log("-------- FETCHED from API --------");
-          //   console.log("-------- getEndpoint ", `${getEndpoint}`);
-          //   console.log("-------- params ", params);
-          const {
-            settings: { handler = async () => Promise.resolve(null) } = {},
-          } =
-            server
-              .table()
-              .find(
-                ({ method, path }) => toEndpoint(method, path) === getEndpoint
-              ) || {};
-
-          // param name in get endpoint matches the current
-          if (getEndpoint.includes(idParam)) {
-            request.params[idParam] = params[idParam];
-          } else if (getPathId) {
-            request.params[getPathId] = params[idParam];
-          } else {
-            throw new Error(
-              `Path param missmatch for data fetch endpoint ${getEndpoint} while updating ${routeEndpoint}. Use attribute 'getPathId'`
-            );
-          }
-          return handler(request, h);
-        };
+        const getEndpoint = toEndpoint("get", pathname, getPath);
+        const routeEndpoint = toEndpoint(method, pathname);
 
         if (isUpdate(method)) {
           let oldVals = null;
-          const newVals = clone(payload);
+          let newVals = null;
+          let isProxy = false;
+
+          // check if proxied to upstream server
+          if (isStream(payload)) {
+            isProxy = true;
+          } else {
+            newVals = clone(payload);
+          }
 
           if (!disableCache) {
             oldVals = oldValsCache.get(getEndpoint);
           }
+
           // if null or cache undefined
           if (oldVals == null) {
-            oldVals = await fetchOldVals(getEndpoint);
+            const { payload: data } = await fetchValues(request);
+            oldVals = JSON.parse(data);
           } else {
-            // console.log("=======> FOUND IN CACHE <========");
-            // delete oldValsCache key-value due to update
+            // evict key due to update
             oldValsCache.delete(getEndpoint);
           }
 
@@ -170,22 +161,16 @@ exports.plugin = {
             );
           }
 
-          if (Array.isArray(skipDiff)) {
-            skipDiff.forEach((key) => {
-              delete oldVals[key];
-              delete newVals[key];
-            });
-          } else if (skipDiff != null) {
-            throw new Error(
-              `Invalid type for option: [skipDiff]. Expected array got ${typeof skipDiff}`
-            );
+          if (isProxy) {
+            oldValsCache.set(getEndpoint, oldVals);
+            return h.continue;
           }
-          // console.log("===> oldVals", JSON.stringify(oldVals, null, 4));
-          // console.log("===> newVals", JSON.stringify(newVals, null, 4));
+
+          removeProps(oldVals, newVals, skipDiff);
 
           const [originalValues, newValues] = diffFunc(oldVals, newVals);
 
-          const rec = createMutationRecord({
+          const rec = createMutation({
             method,
             clientId,
             entity: getEntity(entity, pathname),
@@ -198,8 +183,9 @@ exports.plugin = {
           // save to oldValsCache to emit on success
           auditValues.set(routeEndpoint, rec);
         } else if (isDelete(method)) {
-          const originalValues = await fetchOldVals(getEndpoint);
-          const rec = createMutationRecord({
+          const { payload: originalValues } = await fetchValues(request);
+
+          const rec = createMutation({
             method,
             clientId,
             entity: getEntity(entity, pathname),
@@ -218,7 +204,8 @@ exports.plugin = {
       return h.continue;
     });
 
-    server.ext("onPreResponse", (request, h) => {
+    // ------------------------------- PRE-RESPONSE ------------------------- //
+    server.ext("onPreResponse", async (request, h) => {
       try {
         const { [this.name]: auditing = {} } = request.route.settings.plugins;
         // route specific auditing options
@@ -227,21 +214,22 @@ exports.plugin = {
           entity,
           entityKeys,
           idParam = ID_PARAM_DEFAULT,
+          skipDiff,
+          getPath,
         } = auditing;
 
-        const username = request.auth.isAuthenticated
-          ? request.auth.credentials[sidUsernameAttribute]
-          : null;
+        const username = getUser(request, sidUsernameAttribute);
 
         const {
           url: { pathname },
+          headers: { injected },
           method,
           query,
           params,
           payload,
-          response: { source, statusCode },
-          route: { path: routPath },
+          response,
         } = request;
+        const { source, statusCode } = response;
 
         /**
          * skip audit if disabled on route
@@ -256,7 +244,8 @@ exports.plugin = {
           return h.continue;
         }
 
-        const routeEndpoint = toEndpoint(method, routPath);
+        const routeEndpoint = toEndpoint(method, pathname);
+        const getEndpoint = toEndpoint("get", pathname, getPath);
         let rec = null;
 
         /**
@@ -270,7 +259,7 @@ exports.plugin = {
         ) {
           const id = params[idParam] || payload[idParam];
 
-          rec = createActionRecord({
+          rec = createAction({
             clientId,
             entity: getEntity(entity, pathname),
             entityId: getEntityId(entityKeys, id, payload),
@@ -281,25 +270,52 @@ exports.plugin = {
           });
         }
 
-        if (isRead(method) && isSuccessfulResponse(statusCode)) {
+        if (
+          isRead(method) &&
+          isSuccessfulResponse(statusCode) &&
+          injected == null
+        ) {
           const id = params[idParam];
 
-          if (id && !disableCache) {
-            oldValsCache.set(routeEndpoint, source);
+          if (id && !disableCache && !isStream(source)) {
+            oldValsCache.set(getEndpoint, source);
           }
 
-          rec = createActionRecord({
+          rec = createAction({
             clientId,
             entity: getEntity(entity, pathname),
-            entityId: getEntityId(entityKeys, id, source),
+            entityId: getEntityId(entityKeys, id),
             username,
             data: query,
             action: (action && action.toUpperCase()) || AUDIT_TYPE.SEARCH,
           });
-        } else if (
-          (isUpdate(method) || isDelete(method)) &&
-          isSuccessfulResponse(statusCode)
-        ) {
+        } else if (isUpdate(method) && isSuccessfulResponse(statusCode)) {
+          // if proxied check cache for initial data and the response for new
+          const id = params[idParam];
+          const oldVals = oldValsCache.get(getEndpoint);
+
+          if (isStream(source)) {
+            const { payload: data } = await fetchValues(request);
+            const newVals = JSON.parse(data);
+
+            removeProps(oldVals, newVals, skipDiff);
+            const [originalValues, newValues] = diffFunc(oldVals, newVals);
+
+            rec = createMutation({
+              method,
+              clientId,
+              entity: getEntity(entity, pathname),
+              entityId: getEntityId(entityKeys, id, newVals),
+              username,
+              originalValues,
+              newValues,
+            });
+
+            oldValsCache.delete(getEndpoint);
+          } else {
+            rec = auditValues.get(routeEndpoint);
+          }
+        } else if (isDelete(method) && isSuccessfulResponse(statusCode)) {
           rec = auditValues.get(routeEndpoint);
         } else if (isCreate(method) && isSuccessfulResponse(statusCode)) {
           const id = gotResponseData(source)
@@ -307,7 +323,7 @@ exports.plugin = {
             : payload[idParam];
           const data = gotResponseData(source) ? source : payload;
 
-          rec = createMutationRecord({
+          rec = createMutation({
             method,
             clientId,
             entity: getEntity(entity, pathname),
@@ -317,7 +333,8 @@ exports.plugin = {
           });
         }
 
-        if (shouldAuditRequest(method, auditGetRequests)) {
+        // skipp auditing of GET requests if enabled and injected from plugin
+        if (shouldAuditRequest(method, auditGetRequests, injected)) {
           emitAuditEvent(rec, routeEndpoint);
         }
       } catch (error) {

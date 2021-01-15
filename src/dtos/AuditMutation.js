@@ -3,7 +3,7 @@ import AuditMutationBody from "./AuditMutationBody";
 
 class AuditMutation {
   constructor(input) {
-    let {
+    const {
       method,
       action,
       entity,
@@ -14,20 +14,21 @@ class AuditMutation {
       originalValues = {},
       newValues = {},
     } = input;
+    let httpAction = null;
 
     if (!action && `${method}`.toLowerCase() === "put") {
-      action = AUDIT_ACTION.MUTATION_UPDATE;
+      httpAction = AUDIT_ACTION.MUTATION_UPDATE;
     } else if (!action && `${method}`.toLowerCase() === "post") {
-      action = AUDIT_ACTION.MUTATION_CREATE;
+      httpAction = AUDIT_ACTION.MUTATION_CREATE;
     } else if (!action && `${method}`.toLowerCase() === "delete") {
-      action = AUDIT_ACTION.MUTATION_DELETE;
+      httpAction = AUDIT_ACTION.MUTATION_DELETE;
     }
 
     this.application = application;
     this.type = AUDIT_TYPE.MUTATION;
     this.body = new AuditMutationBody({
       entity,
-      action,
+      action: action || httpAction,
       entityId,
       username,
       originalValues,
