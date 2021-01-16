@@ -50,12 +50,9 @@ export const isSuccessfulResponse = (code) =>
   parseInt(code, 10) >= 200 &&
   parseInt(code, 10) <= 299;
 
-export const createMutation = ({
-  method,
-  clientId,
+export const initMutation = ({ method, clientId, username }) => ({
   entity,
   entityId,
-  username,
   originalValues,
   newValues,
 }) =>
@@ -69,11 +66,9 @@ export const createMutation = ({
     newValues,
   });
 
-export const createAction = ({
-  clientId,
+export const initAction = ({ clientId, username }) => ({
   entity,
   entityId,
-  username,
   data,
   action,
   type,

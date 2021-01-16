@@ -1,4 +1,3 @@
-import { AUDIT_TYPE } from "./enums";
 import {
   clone,
   isRead,
@@ -10,8 +9,8 @@ import {
   getEntity,
   toEndpoint,
   isSuccessfulResponse,
-  createMutation,
-  createAction,
+  initMutation,
+  initAction,
   getEntityId,
   gotResponseData,
   shouldAuditRequest,
@@ -26,7 +25,7 @@ exports.plugin = {
     hapi: ">=17.0.0",
   },
   name: "hapi-audit-rest",
-  version: "1.8.0",
+  version: "1.9.0",
   async register(server, options) {
     // validate options schema
     validateSchema(options);
@@ -112,9 +111,7 @@ exports.plugin = {
         } = request;
 
         /**
-         * skip audit if disabled on route
-         * skip audit if not within session scope
-         * skip audit if path does no match criteria
+         * skip audit if disabled on route, not within session scope, path does no match criteria
          * if this will be handled as a custom action skip to process on preResponse
          */
         if (
@@ -126,6 +123,7 @@ exports.plugin = {
           return h.continue;
         }
 
+        const createMutation = initMutation({ method, clientId, username });
         const id = params[idParam];
         const getEndpoint = toEndpoint("get", pathname, getPath);
         const routeEndpoint = toEndpoint(method, pathname);
@@ -171,11 +169,8 @@ exports.plugin = {
           const [originalValues, newValues] = diffFunc(oldVals, newVals);
 
           const rec = createMutation({
-            method,
-            clientId,
             entity: getEntity(entity, pathname),
             entityId: getEntityId(entityKeys, id, newVals),
-            username,
             originalValues,
             newValues,
           });
@@ -186,11 +181,8 @@ exports.plugin = {
           const { payload: originalValues } = await fetchValues(request);
 
           const rec = createMutation({
-            method,
-            clientId,
             entity: getEntity(entity, pathname),
             entityId: getEntityId(entityKeys, id, originalValues),
-            username,
             originalValues,
           });
 
@@ -231,11 +223,7 @@ exports.plugin = {
         } = request;
         const { source, statusCode } = response;
 
-        /**
-         * skip audit if disabled on route
-         * skip audit if not within session scope
-         * skip audit if path does no match criteria
-         */
+        // skip audit if disabled on route, not within session scope, path does no match criteria
         if (
           isDisabled(auditing) ||
           !isLoggedIn(username) ||
@@ -244,6 +232,8 @@ exports.plugin = {
           return h.continue;
         }
 
+        const createMutation = initMutation({ method, clientId, username });
+        const createAction = initAction({ clientId, username });
         const routeEndpoint = toEndpoint(method, pathname);
         const getEndpoint = toEndpoint("get", pathname, getPath);
         let rec = null;
@@ -260,10 +250,8 @@ exports.plugin = {
           const id = params[idParam] || payload[idParam];
 
           rec = createAction({
-            clientId,
             entity: getEntity(entity, pathname),
             entityId: getEntityId(entityKeys, id, payload),
-            username,
             data: payload,
             action,
             type: action,
@@ -282,12 +270,9 @@ exports.plugin = {
           }
 
           rec = createAction({
-            clientId,
             entity: getEntity(entity, pathname),
             entityId: getEntityId(entityKeys, id),
-            username,
             data: query,
-            action: (action && action.toUpperCase()) || AUDIT_TYPE.SEARCH,
           });
         } else if (isUpdate(method) && isSuccessfulResponse(statusCode)) {
           // if proxied check cache for initial data and the response for new
@@ -302,11 +287,8 @@ exports.plugin = {
             const [originalValues, newValues] = diffFunc(oldVals, newVals);
 
             rec = createMutation({
-              method,
-              clientId,
               entity: getEntity(entity, pathname),
               entityId: getEntityId(entityKeys, id, newVals),
-              username,
               originalValues,
               newValues,
             });
@@ -321,19 +303,23 @@ exports.plugin = {
           const id = gotResponseData(source)
             ? source[idParam]
             : payload[idParam];
-          const data = gotResponseData(source) ? source : payload;
 
-          rec = createMutation({
-            method,
-            clientId,
-            entity: getEntity(entity, pathname),
-            entityId: getEntityId(entityKeys, id, data),
-            username,
-            newValues: data,
-          });
+          if (!isStream(source)) {
+            const data = gotResponseData(source) ? source : payload;
+
+            rec = createMutation({
+              entity: getEntity(entity, pathname),
+              entityId: getEntityId(entityKeys, id, data),
+              newValues: data,
+            });
+          } else {
+            throw new Error(
+              `Cannot raed streamed response on ${routeEndpoint}`
+            );
+          }
         }
 
-        // skipp auditing of GET requests if enabled and injected from plugin
+        // skipp auditing of GET requests if enabled, of injected from plugin
         if (shouldAuditRequest(method, auditGetRequests, injected)) {
           emitAuditEvent(rec, routeEndpoint);
         }
