@@ -17,6 +17,7 @@ import {
   removeProps,
   isStream,
   getUser,
+  keepProps,
 } from "./utils";
 import validateSchema from "./validations";
 
@@ -25,7 +26,7 @@ exports.plugin = {
     hapi: ">=17.0.0",
   },
   name: "hapi-audit-rest",
-  version: "1.9.0",
+  version: "1.10.0",
   async register(server, options) {
     // validate options schema
     validateSchema(options);
@@ -78,10 +79,13 @@ exports.plugin = {
       }
     };
 
-    const fetchValues = async ({ headers, auth, url: { pathname } }) =>
+    const fetchValues = async (
+      { headers, auth, url: { pathname } },
+      customGetPath
+    ) =>
       server.inject({
         method: "GET",
-        url: pathname,
+        url: customGetPath || pathname,
         headers: { ...headers, injected: "true" },
         auth,
       });
@@ -96,9 +100,11 @@ exports.plugin = {
           entity,
           entityKeys,
           idParam = ID_PARAM_DEFAULT,
+          skipDiff,
+          auditAsUpdate,
+          diffOnly,
           getPath,
-          getPathId,
-          skipDiff = [],
+          mapParam,
         } = auditing;
 
         const username = getUser(request, sidUsernameAttribute);
@@ -122,13 +128,25 @@ exports.plugin = {
         ) {
           return h.continue;
         }
-
-        const createMutation = initMutation({ method, clientId, username });
+        /**
+         * Ovveride, creates GET endpoint using the value of the specified path param as an id
+         * and the specified path if provided or else the current
+         */
+        const customGetPath = (getPath || pathname).replace(
+          new RegExp(/{.*}/, "gi"),
+          params[mapParam]
+        );
+        const createMutation = initMutation({
+          method,
+          clientId,
+          username,
+          auditAsUpdate,
+        });
         const id = params[idParam];
-        const getEndpoint = toEndpoint("get", pathname, getPath);
+        const getEndpoint = toEndpoint("get", pathname, customGetPath);
         const routeEndpoint = toEndpoint(method, pathname);
 
-        if (isUpdate(method)) {
+        if (isUpdate(method) || auditAsUpdate) {
           let oldVals = null;
           let newVals = null;
           let isProxy = false;
@@ -146,7 +164,7 @@ exports.plugin = {
 
           // if null or cache undefined
           if (oldVals == null) {
-            const { payload: data } = await fetchValues(request);
+            const { payload: data } = await fetchValues(request, customGetPath);
             oldVals = JSON.parse(data);
           } else {
             // evict key due to update
@@ -159,12 +177,16 @@ exports.plugin = {
             );
           }
 
-          if (isProxy) {
+          if (isProxy || auditAsUpdate) {
             oldValsCache.set(getEndpoint, oldVals);
             return h.continue;
           }
 
-          removeProps(oldVals, newVals, skipDiff);
+          if (diffOnly) {
+            keepProps(oldVals, newVals, diffOnly);
+          } else {
+            removeProps(oldVals, newVals, skipDiff);
+          }
 
           const [originalValues, newValues] = diffFunc(oldVals, newVals);
 
@@ -207,7 +229,10 @@ exports.plugin = {
           entityKeys,
           idParam = ID_PARAM_DEFAULT,
           skipDiff,
+          auditAsUpdate,
+          diffOnly,
           getPath,
+          mapParam,
         } = auditing;
 
         const username = getUser(request, sidUsernameAttribute);
@@ -231,11 +256,19 @@ exports.plugin = {
         ) {
           return h.continue;
         }
-
-        const createMutation = initMutation({ method, clientId, username });
+        const customGetPath = (getPath || pathname).replace(
+          new RegExp(/{.*}/, "gi"),
+          params[mapParam]
+        );
+        const createMutation = initMutation({
+          method,
+          clientId,
+          username,
+          auditAsUpdate,
+        });
         const createAction = initAction({ clientId, username });
         const routeEndpoint = toEndpoint(method, pathname);
-        const getEndpoint = toEndpoint("get", pathname, getPath);
+        const getEndpoint = toEndpoint("get", pathname, customGetPath);
         let rec = null;
 
         /**
@@ -274,16 +307,24 @@ exports.plugin = {
             entityId: getEntityId(entityKeys, id),
             data: query,
           });
-        } else if (isUpdate(method) && isSuccessfulResponse(statusCode)) {
+        } else if (
+          (isUpdate(method) || auditAsUpdate) &&
+          isSuccessfulResponse(statusCode)
+        ) {
           // if proxied check cache for initial data and the response for new
           const id = params[idParam];
           const oldVals = oldValsCache.get(getEndpoint);
 
-          if (isStream(source)) {
-            const { payload: data } = await fetchValues(request);
+          if (isStream(source) || auditAsUpdate) {
+            const { payload: data } = await fetchValues(request, customGetPath);
             const newVals = JSON.parse(data);
 
-            removeProps(oldVals, newVals, skipDiff);
+            if (diffOnly) {
+              keepProps(oldVals, newVals, diffOnly);
+            } else {
+              removeProps(oldVals, newVals, skipDiff);
+            }
+
             const [originalValues, newValues] = diffFunc(oldVals, newVals);
 
             rec = createMutation({

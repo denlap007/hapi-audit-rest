@@ -50,13 +50,15 @@ export const isSuccessfulResponse = (code) =>
   parseInt(code, 10) >= 200 &&
   parseInt(code, 10) <= 299;
 
-export const initMutation = ({ method, clientId, username }) => ({
-  entity,
-  entityId,
-  originalValues,
-  newValues,
-}) =>
-  new AuditMutation({
+export const initMutation = ({
+  method: httpVerb,
+  clientId,
+  username,
+  simulateUpdate,
+}) => ({ entity, entityId, originalValues, newValues }) => {
+  const method = simulateUpdate ? "PUT" : httpVerb;
+
+  return new AuditMutation({
     method,
     application: clientId,
     entity,
@@ -65,6 +67,7 @@ export const initMutation = ({ method, clientId, username }) => ({
     originalValues,
     newValues,
   });
+};
 
 export const initAction = ({ clientId, username }) => ({
   entity,
@@ -123,3 +126,22 @@ export const isStream = (input) => input instanceof stream.Readable;
 
 export const getUser = (req, sidUsernameAttribute) =>
   req.auth.isAuthenticated ? req.auth.credentials[sidUsernameAttribute] : null;
+
+export const keepProps = (left, right, props) => {
+  if (props != null && Array.isArray(props)) {
+    [...new Set([Object.keys(left), Object.keys(right)].flat())].forEach(
+      (key) => {
+        if (!props.includes(key)) {
+          delete left[key];
+          delete right[key];
+        }
+      }
+    );
+  } else {
+    throw new Error(
+      `Invalid type for option: [props]. Expected array got ${typeof props}`
+    );
+  }
+
+  return [left, right];
+};

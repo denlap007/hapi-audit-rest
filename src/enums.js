@@ -13,8 +13,3 @@ export const MUTATION_ACTION = Object.freeze({
   MUTATION_UPDATE: "UPDATE",
   MUTATION_DELETE: "DELETE",
 });
-
-export const AUDIT_TYPE = Object.freeze({
-  MUTATION: "MUTATION",
-  ACTION: "ACTION",
-});
