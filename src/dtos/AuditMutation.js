@@ -1,4 +1,4 @@
-import { AUDIT_OUTCOME, AUDIT_TYPE, AUDIT_ACTION } from "../enums";
+import { AUDIT_OUTCOME, EVENT_TYPE, MUTATION_ACTION } from "../enums";
 import AuditMutationBody from "./AuditMutationBody";
 
 class AuditMutation {
@@ -17,15 +17,15 @@ class AuditMutation {
     let httpAction = null;
 
     if (!action && `${method}`.toLowerCase() === "put") {
-      httpAction = AUDIT_ACTION.MUTATION_UPDATE;
+      httpAction = MUTATION_ACTION.MUTATION_UPDATE;
     } else if (!action && `${method}`.toLowerCase() === "post") {
-      httpAction = AUDIT_ACTION.MUTATION_CREATE;
+      httpAction = MUTATION_ACTION.MUTATION_CREATE;
     } else if (!action && `${method}`.toLowerCase() === "delete") {
-      httpAction = AUDIT_ACTION.MUTATION_DELETE;
+      httpAction = MUTATION_ACTION.MUTATION_DELETE;
     }
 
     this.application = application;
-    this.type = AUDIT_TYPE.MUTATION;
+    this.type = EVENT_TYPE.MUTATION;
     this.body = new AuditMutationBody({
       entity,
       action: action || httpAction,

@@ -3,13 +3,18 @@ export const AUDIT_OUTCOME = Object.freeze({
   FAIL: "Fail",
 });
 
-export const AUDIT_TYPE = Object.freeze({
+export const EVENT_TYPE = Object.freeze({
   MUTATION: "MUTATION",
   SEARCH: "SEARCH",
 });
 
-export const AUDIT_ACTION = Object.freeze({
+export const MUTATION_ACTION = Object.freeze({
   MUTATION_CREATE: "CREATE",
   MUTATION_UPDATE: "UPDATE",
   MUTATION_DELETE: "DELETE",
+});
+
+export const AUDIT_TYPE = Object.freeze({
+  MUTATION: "MUTATION",
+  ACTION: "ACTION",
 });
