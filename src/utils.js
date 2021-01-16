@@ -116,7 +116,7 @@ export const removeProps = (left, right, props) => {
     });
   } else if (props != null) {
     throw new Error(
-      `Invalid type for option: [skipDiff]. Expected array got ${typeof skipDiff}`
+      `Invalid type for option: [skipDiff]. Expected array got ${typeof props}`
     );
   }
   return [left, right];
@@ -139,7 +139,7 @@ export const keepProps = (left, right, props) => {
     );
   } else {
     throw new Error(
-      `Invalid type for option: [props]. Expected array got ${typeof props}`
+      `Invalid type for option: [diffOnly]. Expected array got ${typeof props}`
     );
   }
 
