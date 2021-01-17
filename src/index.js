@@ -18,6 +18,7 @@ import {
   isStream,
   getUser,
   keepProps,
+  checkOldVals,
 } from "./utils";
 import validateSchema from "./validations";
 
@@ -26,7 +27,7 @@ exports.plugin = {
     hapi: ">=17.0.0",
   },
   name: "hapi-audit-rest",
-  version: "1.10.0",
+  version: "1.10.1",
   async register(server, options) {
     // validate options schema
     validateSchema(options);
@@ -171,11 +172,7 @@ exports.plugin = {
             oldValsCache.delete(getEndpoint);
           }
 
-          if (oldVals === null) {
-            throw new Error(
-              `Cannot get data before update on ${routeEndpoint}`
-            );
-          }
+          checkOldVals(oldVals, routeEndpoint);
 
           if (isProxy || auditAsUpdate) {
             oldValsCache.set(getEndpoint, oldVals);
@@ -314,6 +311,8 @@ exports.plugin = {
           // if proxied check cache for initial data and the response for new
           const id = params[idParam];
           const oldVals = oldValsCache.get(getEndpoint);
+
+          checkOldVals(oldVals, routeEndpoint);
 
           if (isStream(source) || auditAsUpdate) {
             const { payload: data } = await fetchValues(request, customGetPath);
