@@ -8,7 +8,7 @@ Works with Hapi v17 or higher
 
 # Installation
 
-npm i -S hapi-audit-rest
+`npm i -S hapi-audit-rest`
 
 # About
 
