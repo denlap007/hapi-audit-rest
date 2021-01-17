@@ -145,3 +145,9 @@ export const keepProps = (left, right, props) => {
 
   return [left, right];
 };
+
+export const checkOldVals = (oldVals, routeEndpoint) => {
+  if (oldVals == null) {
+    throw new Error(`Cannot get data before update on ${routeEndpoint}`);
+  }
+};
