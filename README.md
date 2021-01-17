@@ -14,7 +14,7 @@ Works with Hapi v17 or higher
 
 This is a small plugin that can generate information for auditing purposes. A unit of information for that purpose is called an auditing record.
 
-For REST APIs, **CRUD operations of users on resources** can be monitored. For every request an **auditing event** is emitted. An event handler is provided to haνdle the event.
+For REST APIs, **CRUD operations of users on resources** can be monitored. For every request, an **auditing event** is emitted. An event handler is provided to handle the event.
 
 Two events are pre-configured:
 
@@ -27,7 +27,7 @@ All **GET requests** are considered **SEARCH events**. A Mutation event can be o
 - **POST** request is a **CREATE** action
 - **DELETE** request is a **DELETE** action
 
-For mutations, the affected entity, its id and the values (payload) before and after the action are recorded. A diff fuction computes the differences observed as a result of the action. Users can bind their own function implementations, although a reference implementation may be provided in the future for comleteness.
+For mutations, the affected entity, its id and the values (payload) before and after the action are recorded. A diff function computes the differences observed because of the action. Users can bind their own function implementations, although a reference implementation may be provided in the future for completeness.
 
 # Features
 
