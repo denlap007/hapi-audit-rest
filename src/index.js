@@ -8,7 +8,7 @@ import {
   isLoggedIn,
   getEntity,
   toEndpoint,
-  isSuccessfulResponse,
+  success,
   initMutation,
   initAction,
   getEntityId,
@@ -27,12 +27,12 @@ exports.plugin = {
     hapi: ">=17.0.0",
   },
   name: "hapi-audit-rest",
-  version: "1.11.2",
+  version: "1.11.3",
   async register(server, options) {
     // validate options schema
     validateSchema(options);
 
-    const FIVE_MINS_MSECS = 300000;
+    const FIFTEEN_MINS_MSECS = 900000;
     const ID_PARAM_DEFAULT = "id";
     const {
       disableOnRoutes, // TODO
@@ -43,7 +43,7 @@ exports.plugin = {
       clientId = "client-app",
       sidUsernameAttribute = "userName",
       emitEventName = "auditing",
-      cacheExpiresIn = FIVE_MINS_MSECS,
+      cacheExpiresIn = FIFTEEN_MINS_MSECS,
       isAuditable = (path, method) => path.startsWith("/api"),
       eventHanler = (data) => {
         console.log("Emitted Audit Record", JSON.stringify(data, null, 4));
@@ -231,7 +231,6 @@ exports.plugin = {
           diffOnly,
           getPath,
           mapParam,
-          forceGetAfterUpdate,
         } = auditing;
 
         const username = getUser(request, sidUsernameAttribute);
@@ -242,10 +241,10 @@ exports.plugin = {
           method,
           query,
           params,
-          payload,
+          payload: reqPayload,
           response,
         } = request;
-        const { source, statusCode } = response;
+        const { resp, statusCode } = response;
 
         // skip audit if disabled on route, not within session scope, path does no match criteria
         if (
@@ -272,33 +271,29 @@ exports.plugin = {
 
         /**
          * Override default behaviour. For POST, PUT if user action is specified on route
-         * don't create a mutation but an action instead with the payload data
+         * don't create a mutation but an action instead with the reqPayload data
          * */
         if (
           action &&
           (isUpdate(method) || isCreate(method)) &&
-          isSuccessfulResponse(statusCode)
+          success(statusCode)
         ) {
-          const id = params[idParam] || payload[idParam];
+          const id = params[idParam] || reqPayload[idParam];
 
           rec = createAction({
             entity: getEntity(entity, pathname),
-            entityId: getEntityId(entityKeys, id, payload),
-            data: payload,
+            entityId: getEntityId(entityKeys, id, reqPayload),
+            data: reqPayload,
             action,
             type: action,
           });
         }
 
-        if (
-          isRead(method) &&
-          isSuccessfulResponse(statusCode) &&
-          injected == null
-        ) {
+        if (isRead(method) && success(statusCode) && injected == null) {
           const id = params[idParam];
 
-          if (id && !disableCache && !isStream(source)) {
-            oldValsCache.set(getEndpoint, source);
+          if (id && !disableCache && !isStream(resp)) {
+            oldValsCache.set(getEndpoint, resp);
           }
 
           rec = createAction({
@@ -307,20 +302,16 @@ exports.plugin = {
             action,
             data: query,
           });
-        } else if (
-          (isUpdate(method) || auditAsUpdate) &&
-          isSuccessfulResponse(statusCode)
-        ) {
+        } else if ((isUpdate(method) || auditAsUpdate) && success(statusCode)) {
           // if proxied check cache for initial data and the response for new
           const id = params[idParam];
           const oldVals = oldValsCache.get(getEndpoint);
           rec = auditValues.get(routeEndpoint);
 
+          // if a record was created audit it, else fetch new vals and create it
           if (rec == null) {
             checkOldVals(oldVals, routeEndpoint);
-          }
 
-          if (isStream(source) || auditAsUpdate || forceGetAfterUpdate) {
             const { payload: data } = await fetchValues(request, customGetPath);
 
             const newVals = JSON.parse(data);
@@ -342,15 +333,15 @@ exports.plugin = {
 
             oldValsCache.delete(getEndpoint);
           }
-        } else if (isDelete(method) && isSuccessfulResponse(statusCode)) {
+        } else if (isDelete(method) && success(statusCode)) {
           rec = auditValues.get(routeEndpoint);
-        } else if (isCreate(method) && isSuccessfulResponse(statusCode)) {
-          const id = gotResponseData(source)
-            ? source[idParam]
-            : payload[idParam];
+        } else if (isCreate(method) && success(statusCode)) {
+          const id = gotResponseData(resp)
+            ? resp[idParam]
+            : reqPayload[idParam];
 
-          if (!isStream(source)) {
-            const data = gotResponseData(source) ? source : payload;
+          if (!isStream(resp)) {
+            const data = gotResponseData(resp) ? resp : reqPayload;
 
             rec = createMutation({
               entity: getEntity(entity, pathname),
