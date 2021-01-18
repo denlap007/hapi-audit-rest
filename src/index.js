@@ -27,7 +27,7 @@ exports.plugin = {
     hapi: ">=17.0.0",
   },
   name: "hapi-audit-rest",
-  version: "1.11.0",
+  version: "1.11.1",
   async register(server, options) {
     // validate options schema
     validateSchema(options);
