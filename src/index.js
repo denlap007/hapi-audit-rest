@@ -27,7 +27,7 @@ exports.plugin = {
     hapi: ">=17.0.0",
   },
   name: "hapi-audit-rest",
-  version: "1.10.1",
+  version: "1.11.0",
   async register(server, options) {
     // validate options schema
     validateSchema(options);
@@ -106,6 +106,7 @@ exports.plugin = {
           diffOnly,
           getPath,
           mapParam,
+          forceGetAfterUpdate,
         } = auditing;
 
         const username = getUser(request, sidUsernameAttribute);
@@ -174,7 +175,7 @@ exports.plugin = {
 
           checkOldVals(oldVals, routeEndpoint);
 
-          if (isProxy || auditAsUpdate) {
+          if (isProxy || auditAsUpdate || forceGetAfterUpdate) {
             oldValsCache.set(getEndpoint, oldVals);
             return h.continue;
           }
@@ -193,6 +194,8 @@ exports.plugin = {
             originalValues,
             newValues,
           });
+
+          oldValsCache.set(getEndpoint, oldVals);
 
           // save to oldValsCache to emit on success
           auditValues.set(routeEndpoint, rec);
@@ -230,6 +233,7 @@ exports.plugin = {
           diffOnly,
           getPath,
           mapParam,
+          forceGetAfterUpdate,
         } = auditing;
 
         const username = getUser(request, sidUsernameAttribute);
@@ -301,7 +305,8 @@ exports.plugin = {
 
           rec = createAction({
             entity: getEntity(entity, pathname),
-            entityId: getEntityId(entityKeys, id),
+            entityId: getEntityId(entityKeys, id, params),
+            action,
             data: query,
           });
         } else if (
@@ -314,8 +319,9 @@ exports.plugin = {
 
           checkOldVals(oldVals, routeEndpoint);
 
-          if (isStream(source) || auditAsUpdate) {
+          if (isStream(source) || auditAsUpdate || forceGetAfterUpdate) {
             const { payload: data } = await fetchValues(request, customGetPath);
+
             const newVals = JSON.parse(data);
 
             if (diffOnly) {

@@ -151,3 +151,15 @@ export const checkOldVals = (oldVals, routeEndpoint) => {
     throw new Error(`Cannot get data before update on ${routeEndpoint}`);
   }
 };
+
+export const parsePayload = (payload, result) => {
+  let data = {};
+
+  try {
+    data = JSON.parse(payload);
+  } catch (error) {
+    data = JSON.parse(result);
+  }
+
+  return data;
+};

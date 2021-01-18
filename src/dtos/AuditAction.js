@@ -7,7 +7,7 @@ class AuditAction {
       type = EVENT_TYPE.SEARCH,
       entity,
       entityId,
-      action,
+      action = EVENT_TYPE.SEARCH,
       username,
       data = {},
       outcome = AUDIT_OUTCOME.SUCCESS,
