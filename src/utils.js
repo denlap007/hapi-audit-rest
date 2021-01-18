@@ -54,9 +54,9 @@ export const initMutation = ({
   method: httpVerb,
   clientId,
   username,
-  simulateUpdate,
+  auditAsUpdate,
 }) => ({ entity, entityId, originalValues, newValues }) => {
-  const method = simulateUpdate ? "PUT" : httpVerb;
+  const method = auditAsUpdate ? "PUT" : httpVerb;
 
   return new AuditMutation({
     method,

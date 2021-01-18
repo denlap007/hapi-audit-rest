@@ -27,7 +27,7 @@ exports.plugin = {
     hapi: ">=17.0.0",
   },
   name: "hapi-audit-rest",
-  version: "1.11.1",
+  version: "1.11.2",
   async register(server, options) {
     // validate options schema
     validateSchema(options);
@@ -148,7 +148,7 @@ exports.plugin = {
         const getEndpoint = toEndpoint("get", pathname, customGetPath);
         const routeEndpoint = toEndpoint(method, pathname);
 
-        if (isUpdate(method) || auditAsUpdate) {
+        if (isUpdate(method) || auditAsUpdate || forceGetAfterUpdate) {
           let oldVals = null;
           let newVals = null;
           let isProxy = false;
@@ -194,8 +194,6 @@ exports.plugin = {
             originalValues,
             newValues,
           });
-
-          oldValsCache.set(getEndpoint, oldVals);
 
           // save to oldValsCache to emit on success
           auditValues.set(routeEndpoint, rec);
@@ -316,8 +314,11 @@ exports.plugin = {
           // if proxied check cache for initial data and the response for new
           const id = params[idParam];
           const oldVals = oldValsCache.get(getEndpoint);
+          rec = auditValues.get(routeEndpoint);
 
-          checkOldVals(oldVals, routeEndpoint);
+          if (rec == null) {
+            checkOldVals(oldVals, routeEndpoint);
+          }
 
           if (isStream(source) || auditAsUpdate || forceGetAfterUpdate) {
             const { payload: data } = await fetchValues(request, customGetPath);
@@ -340,8 +341,6 @@ exports.plugin = {
             });
 
             oldValsCache.delete(getEndpoint);
-          } else {
-            rec = auditValues.get(routeEndpoint);
           }
         } else if (isDelete(method) && isSuccessfulResponse(statusCode)) {
           rec = auditValues.get(routeEndpoint);
