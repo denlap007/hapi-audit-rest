@@ -27,7 +27,7 @@ exports.plugin = {
     hapi: ">=17.0.0",
   },
   name: "hapi-audit-rest",
-  version: "1.11.3",
+  version: "1.12.0",
   async register(server, options) {
     // validate options schema
     validateSchema(options);
@@ -223,6 +223,7 @@ exports.plugin = {
         // route specific auditing options
         const {
           action,
+          type,
           entity,
           entityKeys,
           idParam = ID_PARAM_DEFAULT,
@@ -231,6 +232,7 @@ exports.plugin = {
           diffOnly,
           getPath,
           mapParam,
+          paramsAsData,
         } = auditing;
 
         const username = getUser(request, sidUsernameAttribute);
@@ -276,7 +278,8 @@ exports.plugin = {
         if (
           action &&
           (isUpdate(method) || isCreate(method)) &&
-          success(statusCode)
+          success(statusCode) &&
+          !isStream(reqPayload)
         ) {
           const id = params[idParam] || reqPayload[idParam];
 
@@ -285,11 +288,9 @@ exports.plugin = {
             entityId: getEntityId(entityKeys, id, reqPayload),
             data: reqPayload,
             action,
-            type: action,
+            type,
           });
-        }
-
-        if (isRead(method) && success(statusCode) && injected == null) {
+        } else if (isRead(method) && success(statusCode) && injected == null) {
           const id = params[idParam];
 
           if (id && !disableCache && !isStream(resp)) {
@@ -300,10 +301,9 @@ exports.plugin = {
             entity: getEntity(entity, pathname),
             entityId: getEntityId(entityKeys, id, params),
             action,
-            data: query,
+            data: paramsAsData ? params : query,
           });
         } else if ((isUpdate(method) || auditAsUpdate) && success(statusCode)) {
-          // if proxied check cache for initial data and the response for new
           const id = params[idParam];
           const oldVals = oldValsCache.get(getEndpoint);
           rec = auditValues.get(routeEndpoint);
@@ -313,7 +313,6 @@ exports.plugin = {
             checkOldVals(oldVals, routeEndpoint);
 
             const { payload: data } = await fetchValues(request, customGetPath);
-
             const newVals = JSON.parse(data);
 
             if (diffOnly) {
