@@ -19,7 +19,7 @@ class AuditAction {
     this.body = new AuditActionBody({
       entity,
       entityId,
-      action,
+      action: `${action}`.toUpperCase(),
       username,
       data,
     });
