@@ -45,7 +45,7 @@ export const toEndpoint = (method, path, getPath) =>
   getPath ? `${method}:${getPath}` : `${method}:${path}`;
 
 // Successful responses (200–299),
-export const success = (code) =>
+export const isSuccess = (code) =>
   Number.isInteger(code) &&
   parseInt(code, 10) >= 200 &&
   parseInt(code, 10) <= 299;

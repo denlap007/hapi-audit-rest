@@ -8,7 +8,7 @@ import {
   isLoggedIn,
   getEntity,
   toEndpoint,
-  success,
+  isSuccess,
   initMutation,
   initAction,
   getEntityId,
@@ -27,7 +27,7 @@ exports.plugin = {
     hapi: ">=17.0.0",
   },
   name: "hapi-audit-rest",
-  version: "1.12.1",
+  version: "1.13.0",
   async register(server, options) {
     // validate options schema
     validateSchema(options);
@@ -107,6 +107,7 @@ exports.plugin = {
           getPath,
           mapParam,
           forceGetAfterUpdate,
+          simpleAction,
         } = auditing;
 
         const username = getUser(request, sidUsernameAttribute);
@@ -126,10 +127,12 @@ exports.plugin = {
           isDisabled(auditing) ||
           !isLoggedIn(username) ||
           !isAuditable(pathname, method) ||
-          action
+          action ||
+          simpleAction
         ) {
           return h.continue;
         }
+
         /**
          * Ovveride, creates GET endpoint using the value of the specified path param as an id
          * and the specified path if provided or else the current
@@ -223,7 +226,7 @@ exports.plugin = {
         // route specific auditing options
         const {
           action,
-          type,
+          eventType,
           entity,
           entityKeys,
           idParam = ID_PARAM_DEFAULT,
@@ -233,6 +236,7 @@ exports.plugin = {
           getPath,
           mapParam,
           paramsAsData,
+          simpleAction,
         } = auditing;
 
         const username = getUser(request, sidUsernameAttribute);
@@ -248,14 +252,16 @@ exports.plugin = {
         } = request;
         const { source: resp, statusCode } = response;
 
-        // skip audit if disabled on route, not within session scope, path does no match criteria
+        // skip audit if disabled on route, not in session, path does not match criteria, call failed
         if (
           isDisabled(auditing) ||
           !isLoggedIn(username) ||
-          !isAuditable(pathname, method)
+          !isAuditable(pathname, method) ||
+          !isSuccess(statusCode)
         ) {
           return h.continue;
         }
+
         const customGetPath = (getPath || pathname).replace(
           new RegExp(/{.*}/, "gi"),
           params[mapParam]
@@ -271,16 +277,25 @@ exports.plugin = {
         const getEndpoint = toEndpoint("get", pathname, customGetPath);
         let rec = null;
 
-        /**
-         * Override default behaviour. For POST, PUT if user action is specified on route
-         * don't create a mutation but an action instead with the reqPayload data
-         * */
-        if (
+        if (simpleAction) {
+          const id = params[idParam];
+
+          rec = createAction({
+            entity: getEntity(entity, pathname),
+            entityId: id,
+            action: simpleAction,
+            type: eventType,
+          });
+        } else if (
           action &&
           (isUpdate(method) || isCreate(method)) &&
-          success(statusCode) &&
           !isStream(reqPayload)
         ) {
+          /**
+           * Override default behaviour. For POST, PUT if user action is specified on route
+           * don't create a mutation but an action instead with the reqPayload data
+           * */
+
           const id = params[idParam] || reqPayload[idParam];
 
           rec = createAction({
@@ -288,9 +303,9 @@ exports.plugin = {
             entityId: getEntityId(entityKeys, id, reqPayload),
             data: reqPayload,
             action,
-            type,
+            type: eventType,
           });
-        } else if (isRead(method) && success(statusCode) && injected == null) {
+        } else if (isRead(method) && injected == null) {
           const id = params[idParam];
 
           if (id && !disableCache && !isStream(resp)) {
@@ -303,7 +318,7 @@ exports.plugin = {
             action,
             data: paramsAsData ? params : query,
           });
-        } else if ((isUpdate(method) || auditAsUpdate) && success(statusCode)) {
+        } else if (isUpdate(method) || auditAsUpdate) {
           const id = params[idParam];
           const oldVals = oldValsCache.get(getEndpoint);
           rec = auditValues.get(routeEndpoint);
@@ -332,9 +347,9 @@ exports.plugin = {
 
             oldValsCache.delete(getEndpoint);
           }
-        } else if (isDelete(method) && success(statusCode)) {
+        } else if (isDelete(method)) {
           rec = auditValues.get(routeEndpoint);
-        } else if (isCreate(method) && success(statusCode)) {
+        } else if (isCreate(method)) {
           const id = gotResponseData(resp)
             ? resp[idParam]
             : reqPayload[idParam];
