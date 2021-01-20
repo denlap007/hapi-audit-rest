@@ -27,7 +27,7 @@ exports.plugin = {
     hapi: ">=17.0.0",
   },
   name: "hapi-audit-rest",
-  version: "1.12.0",
+  version: "1.12.1",
   async register(server, options) {
     // validate options schema
     validateSchema(options);
@@ -246,7 +246,7 @@ exports.plugin = {
           payload: reqPayload,
           response,
         } = request;
-        const { resp, statusCode } = response;
+        const { source: resp, statusCode } = response;
 
         // skip audit if disabled on route, not within session scope, path does no match criteria
         if (
