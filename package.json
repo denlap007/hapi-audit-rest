@@ -1,6 +1,6 @@
 {
   "name": "hapi-audit-rest",
-  "version": "1.13.0",
+  "version": "1.14.0",
   "description": "A NPM package to audit rest API calls on a Hapi.js server",
   "main": "lib/index.js",
   "scripts": {
@@ -48,5 +48,8 @@
     "husky": "^4.3.7",
     "lint-staged": "^10.5.3",
     "prettier": "^2.2.1"
+  },
+  "dependencies": {
+    "@hapi/validate": "^1.1.3"
   }
 }
