@@ -2,6 +2,7 @@ import Validate from "@hapi/validate";
 
 const constants = {
     FIFTEEN_MINS_MSECS: 900000,
+    DERAULT_CLIENT_ID: "my-app",
 };
 
 const isAuditable = () => (path, method) => path.startsWith("/api");
@@ -11,27 +12,28 @@ const eventHandler = () => (data) => {
         JSON.stringify(data, null, 4)
     );
 };
+const diff = () => (left, right) => [left, right];
 
 export default {
-    basechema: Validate.object({
+    baseSchema: Validate.object({
         auditGetRequests: Validate.boolean().default(true),
         showErrorsOnStdErr: Validate.boolean().default(true),
-        diffFunc: Validate.func().default((left, right) => [left, right]),
+        diffFunc: Validate.func().arity(2).default(diff),
         disableCache: Validate.boolean().default(false),
-        clientId: Validate.string().required(),
+        clientId: Validate.string().default(constants.DERAULT_CLIENT_ID),
         sidUsernameAttribute: Validate.string().required(),
         cacheExpiresIn: Validate.number()
             .positive()
             .min(300000)
             .default(constants.FIFTEEN_MINS_MSECS),
         isAuditable: Validate.func().arity(2).default(isAuditable),
-        eventHanler: Validate.func().default(eventHandler),
+        eventHanler: Validate.func().arity(1).default(eventHandler),
     }),
     routeSchema: Validate.alternatives().try(
         Validate.object({
             id: Validate.object({
                 keys: Validate.array().items(Validate.string()).single(),
-                source: Validate.string().valid("params", "payload"),
+                source: Validate.string().valid("params", "payload").default("params"),
             }),
             eventType: Validate.string(),
             entity: Validate.string(),
