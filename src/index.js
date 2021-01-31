@@ -7,7 +7,7 @@ const internals = {};
 
 internals.pluginName = "hapi-audit-rest";
 
-internals.schema = Schemas.basechema;
+internals.schema = Schemas.baseSchema;
 
 internals.handleError = (options, request, error) => {
     if (options.showErrorsOnStdErr) {
@@ -42,7 +42,7 @@ exports.plugin = {
         // register event and handler
         server.event(internals.pluginName);
         server.events.on(internals.pluginName, options.eventHanler);
-        // console.log("==== options", options);
+        console.log("==== options", options);
 
         server.ext("onPreStart", () => {
             // plugin options route validation
@@ -65,6 +65,7 @@ exports.plugin = {
         // ------------------------------- PRE-HANDLER ------------------------- //
         server.ext("onPreHandler", async (request, h) => {
             console.log("======> onPreHandler", request.url.pathname);
+            // console.log("======> auth", request.auth);
             try {
                 const {
                     [internals.pluginName]: routeOptions = {},
@@ -80,7 +81,6 @@ exports.plugin = {
                  * skip audit if disabled on route, not within session scope, path does no match criteria
                  * if this will be handled as a custom action skip to process on preResponse
                  */
-                console.log("===========> isAuditable", options.isAuditable.toString());
                 if (
                     Utils.isDisabled(routeOptions) ||
                     !Utils.isLoggedIn(username) ||
@@ -135,7 +135,6 @@ exports.plugin = {
 
         // ------------------------------- PRE-RESPONSE ------------------------- //
         server.ext("onPreResponse", async (request, h) => {
-            console.log("===================> onPostHandler", request.url.pathname);
             try {
                 const {
                     [internals.pluginName]: routeOptions = {},
@@ -160,6 +159,8 @@ exports.plugin = {
                 ) {
                     return h.continue;
                 }
+
+                console.log("======> onPostHandler", request.url.pathname);
                 const customGetPath = (routeOptions.getPath || pathname).replace(
                     new RegExp(/{.*}/, "gi"),
                     params[routeOptions.mapParam]

@@ -62,20 +62,6 @@ export default {
             data,
             action,
         }),
-    getEntityId: (entityKeys, id, data) => {
-        let entityId = "";
-
-        if (entityKeys) {
-            entityId = entityKeys.reduce((acc, key) => {
-                const val = data[key];
-                return acc === "" ? `${key}: ${val}` : `${acc}, ${key}: ${val}`;
-            }, "");
-        } else {
-            entityId = id;
-        }
-
-        return entityId;
-    },
     gotResponseData: (data) => data != null,
     shouldAuditRequest: (method, auditGetRequests, injected) =>
         injected == null && ((method === "get" && auditGetRequests) || method !== "get"),
@@ -119,7 +105,7 @@ export default {
     },
     getId: (params, id, payload) => {
         const DEFAULT_ID = "id";
-        let { keys, source } = id;
+        let { keys, source } = id || {};
         let data = params;
 
         if (source === "payload") {
