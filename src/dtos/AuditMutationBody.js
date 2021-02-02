@@ -8,7 +8,6 @@ class AuditMutationBody {
             originalValues = {},
             newValues = {},
             timestamp = new Date(),
-            data = {},
         } = input;
 
         this.entity = entity;
@@ -18,7 +17,6 @@ class AuditMutationBody {
         this.originalValues = originalValues;
         this.newValues = newValues;
         this.timestamp = timestamp;
-        this.data = data;
     }
 }
 
