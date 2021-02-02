@@ -108,7 +108,7 @@ export default {
         let { keys, source } = id || {};
         let data = params;
 
-        if (source === "payload") {
+        if (source === "payload" || params == null) {
             data = payload;
         }
 

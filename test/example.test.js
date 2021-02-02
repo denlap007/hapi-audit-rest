@@ -12,7 +12,7 @@ internals.implmentation = (server, options) => {
     const scheme = {
         authenticate: (request, h) => {
             const credentials = {
-                userName: "paul",
+                userName: "user",
             };
             return h.authenticated({ credentials });
         },
@@ -26,16 +26,16 @@ internals.constants = {
     GET_BY_ID: "GET by id",
 };
 
-describe("test GET flows", () => {
+internals.authInitialization = (server) => {
+    server.auth.scheme("custom", internals.implmentation);
+    server.auth.strategy("default", "custom", { name: "sid" });
+    server.auth.default("default");
+};
+
+describe("test basic GET, POST, PUT flows", () => {
     const server = Hapi.server();
     let auditError = null;
     let auditEvent = null;
-
-    server.route({
-        method: "GET",
-        path: "/",
-        handler: () => "defaults",
-    });
 
     before(async () => {
         server.route({
@@ -48,10 +48,13 @@ describe("test GET flows", () => {
             path: "/api/test/{id}",
             handler: (request, h) => internals.constants.GET_BY_ID,
         });
+        server.route({
+            method: "POST",
+            path: "/api/test",
+            handler: (request, h) => ({ id: 10, ...request.payload }),
+        });
 
-        server.auth.scheme("custom", internals.implmentation);
-        server.auth.strategy("default", "custom", { name: "sid" });
-        server.auth.default("default");
+        internals.authInitialization(server);
 
         await server.register([
             {
@@ -101,7 +104,7 @@ describe("test GET flows", () => {
                 entity: "test",
                 entityId: undefined,
                 action: "SEARCH",
-                username: "paul",
+                username: "user",
                 data: {},
             },
             outcome: "Success",
@@ -126,8 +129,41 @@ describe("test GET flows", () => {
                 entity: "test",
                 entityId: "5",
                 action: "SEARCH",
-                username: "paul",
+                username: "user",
                 data: {},
+            },
+            outcome: "Success",
+        });
+    });
+
+    it("POST, should emit an audit mutation event", async () => {
+        const payload = { a: "a", b: "b", c: "c" };
+        const res = await server.inject({
+            method: "post",
+            payload,
+            url: "/api/test",
+        });
+
+        expect(res.statusCode).to.equal(200);
+        expect(res.result).to.equal({ id: 10, ...payload });
+
+        expect(auditError).to.equal(null);
+
+        expect(auditEvent).to.part.include({
+            application: "my-app",
+            type: "MUTATION",
+            body: {
+                entity: "test",
+                entityId: 10,
+                action: "CREATE",
+                username: "user",
+                originalValues: {},
+                newValues: {
+                    id: 10,
+                    a: "a",
+                    b: "b",
+                    c: "c",
+                },
             },
             outcome: "Success",
         });
