@@ -335,7 +335,7 @@ describe("PROXY flows with default settings", () => {
             // simulate update and change the response retrieved from GET
             getResponse = newValues;
 
-            // when cache is enabled, two GET requests will be injected to fetch old and new values
+            // when cache is disabled, two GET requests will be injected to fetch old and new values
             injectedGETcount = request.headers.injected ? injectedGETcount + 1 : injectedGETcount;
 
             return h.continue;
