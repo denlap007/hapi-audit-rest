@@ -21,11 +21,6 @@ internals.implmentation = (server, options) => {
     return scheme;
 };
 
-internals.constants = {
-    GET_ALL: "GET all",
-    GET_BY_ID: "GET by id",
-};
-
 internals.authInitialization = (server) => {
     server.auth.scheme("custom", internals.implmentation);
     server.auth.strategy("default", "custom", { name: "sid" });
@@ -65,9 +60,10 @@ describe("flows with default settings", () => {
     afterEach(() => {
         auditError = null;
         auditEvent = null;
+        server = null;
     });
 
-    it("GET all, should emit an audit action event", async () => {
+    it("emits an action audit record", async () => {
         server.route({
             method: "GET",
             path: "/api/test",
@@ -97,7 +93,7 @@ describe("flows with default settings", () => {
         });
     });
 
-    it("GET by id, should emit an audit action event", async () => {
+    it("emits an action audit record with specific entityId", async () => {
         server.route({
             method: "GET",
             path: "/api/test/{id}",
@@ -127,7 +123,7 @@ describe("flows with default settings", () => {
         });
     });
 
-    it("POST, should emit an audit mutation event", async () => {
+    it("emits a mutation audit record (POST - CREATE)", async () => {
         const reqPayload = { a: "a", b: "b", c: "c" };
         const resPayload = { id: 1, a: "a", b: "b", c: "c" };
 
@@ -168,7 +164,7 @@ describe("flows with default settings", () => {
         });
     });
 
-    it("PUT, should emit an audit mutation event with payload as new values", async () => {
+    it("emits a mutation audit record (PUT - UPDATE) with oldValues loaded from cache and new values loaded from payload", async () => {
         const reqPayload = { a: "a", b: "bb", c: "cc" };
         const oldValues = { id: 1, a: "a", b: "b", c: "c" };
 
@@ -215,7 +211,56 @@ describe("flows with default settings", () => {
         });
     });
 
-    it("DELETE, should emit an audit mutation event", async () => {
+    it("emits a mutation audit record (PUT - UPDATE) with oldValues loaded from GET by id endpoint and new values loaded from payload", async () => {
+        const reqPayload = { a: "a", b: "bb", c: "cc" };
+        const oldValues = { id: 1, a: "a", b: "b", c: "c" };
+        const newValues = { id: 1, a: "a", b: "bb", c: "cc" };
+        let getResponse = oldValues;
+
+        server.route({
+            method: "GET",
+            path: "/api/test/{id}",
+            handler: (request, h) => getResponse,
+        });
+
+        server.route({
+            method: "PUT",
+            path: "/api/test/{id}",
+            handler: (request, h) => "OK",
+        });
+
+        server.ext("onPostHandler", async (request, h) => {
+            getResponse = newValues;
+
+            return h.continue;
+        });
+
+        const res = await server.inject({
+            method: "PUT",
+            payload: reqPayload,
+            url: "/api/test/5",
+        });
+
+        expect(res.statusCode).to.equal(200);
+
+        expect(auditError).to.equal(null);
+
+        expect(auditEvent).to.part.include({
+            application: "my-app",
+            type: "MUTATION",
+            body: {
+                entity: "test",
+                entityId: "5",
+                action: "UPDATE",
+                username: "user",
+                originalValues: oldValues,
+                newValues: reqPayload,
+            },
+            outcome: "Success",
+        });
+    });
+
+    it("emits a mutation audit record (DELETE)", async () => {
         const oldValues = { id: 1, a: "a", b: "b", c: "c" };
 
         server.route({
