@@ -79,7 +79,7 @@ describe("flows with default settings", () => {
 
         expect(auditError).to.equal(null);
 
-        expect(auditEvent).to.part.include({
+        expect(auditEvent).to.equal({
             application: "my-app",
             type: "SEARCH",
             body: {
@@ -88,6 +88,7 @@ describe("flows with default settings", () => {
                 action: "SEARCH",
                 username: "user",
                 data: {},
+                timestamp: auditEvent.body.timestamp,
             },
             outcome: "Success",
         });
@@ -108,7 +109,7 @@ describe("flows with default settings", () => {
 
         expect(auditError).to.equal(null);
 
-        expect(auditEvent).to.part.include({
+        expect(auditEvent).to.equal({
             application: "my-app",
             type: "SEARCH",
             body: {
@@ -121,6 +122,7 @@ describe("flows with default settings", () => {
                     page: "1",
                     sort: "asc",
                 },
+                timestamp: auditEvent.body.timestamp,
             },
             outcome: "Success",
         });
@@ -142,7 +144,7 @@ describe("flows with default settings", () => {
 
         expect(auditError).to.equal(null);
 
-        expect(auditEvent).to.part.include({
+        expect(auditEvent).to.equal({
             application: "my-app",
             type: "SEARCH",
             body: {
@@ -151,6 +153,7 @@ describe("flows with default settings", () => {
                 action: "SEARCH",
                 username: "user",
                 data: {},
+                timestamp: auditEvent.body.timestamp,
             },
             outcome: "Success",
         });
@@ -177,7 +180,7 @@ describe("flows with default settings", () => {
 
         expect(auditError).to.equal(null);
 
-        expect(auditEvent).to.part.include({
+        expect(auditEvent).to.equal({
             application: "my-app",
             type: "MUTATION",
             body: {
@@ -192,6 +195,7 @@ describe("flows with default settings", () => {
                     b: "b",
                     c: "c",
                 },
+                timestamp: auditEvent.body.timestamp,
             },
             outcome: "Success",
         });
@@ -229,7 +233,7 @@ describe("flows with default settings", () => {
 
         expect(auditError).to.equal(null);
 
-        expect(auditEvent).to.part.include({
+        expect(auditEvent).to.equal({
             application: "my-app",
             type: "MUTATION",
             body: {
@@ -239,6 +243,7 @@ describe("flows with default settings", () => {
                 username: "user",
                 originalValues: oldValues,
                 newValues: reqPayload,
+                timestamp: auditEvent.body.timestamp,
             },
             outcome: "Success",
         });
@@ -278,7 +283,7 @@ describe("flows with default settings", () => {
 
         expect(auditError).to.equal(null);
 
-        expect(auditEvent).to.part.include({
+        expect(auditEvent).to.equal({
             application: "my-app",
             type: "MUTATION",
             body: {
@@ -288,6 +293,7 @@ describe("flows with default settings", () => {
                 username: "user",
                 originalValues: oldValues,
                 newValues: reqPayload,
+                timestamp: auditEvent.body.timestamp,
             },
             outcome: "Success",
         });
@@ -317,7 +323,7 @@ describe("flows with default settings", () => {
 
         expect(auditError).to.equal(null);
 
-        expect(auditEvent).to.part.include({
+        expect(auditEvent).to.equal({
             application: "my-app",
             type: "MUTATION",
             body: {
@@ -327,6 +333,7 @@ describe("flows with default settings", () => {
                 username: "user",
                 originalValues: oldValues,
                 newValues: {},
+                timestamp: auditEvent.body.timestamp,
             },
             outcome: "Success",
         });
