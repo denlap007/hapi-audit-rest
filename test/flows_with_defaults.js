@@ -92,6 +92,39 @@ describe("flows with default settings", () => {
             outcome: "Success",
         });
     });
+    it("emits an action audit record with query params as data", async () => {
+        server.route({
+            method: "GET",
+            path: "/api/test",
+            handler: (request, h) => "OK",
+        });
+
+        const res = await server.inject({
+            method: "get",
+            url: "/api/test?search=test&page=1&sort=asc",
+        });
+
+        expect(res.statusCode).to.equal(200);
+
+        expect(auditError).to.equal(null);
+
+        expect(auditEvent).to.part.include({
+            application: "my-app",
+            type: "SEARCH",
+            body: {
+                entity: "test",
+                entityId: undefined,
+                action: "SEARCH",
+                username: "user",
+                data: {
+                    search: "test",
+                    page: "1",
+                    sort: "asc",
+                },
+            },
+            outcome: "Success",
+        });
+    });
 
     it("emits an action audit record with specific entityId", async () => {
         server.route({
