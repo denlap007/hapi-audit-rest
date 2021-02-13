@@ -45,7 +45,7 @@ describe("PROXY flows with default settings", () => {
             {
                 plugin,
                 options: {
-                    sidUsernameAttribute: "userName",
+                    usernameKey: "userName",
                 },
             },
             h2o2,
