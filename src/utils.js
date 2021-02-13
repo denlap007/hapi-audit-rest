@@ -61,7 +61,7 @@ export default {
         return [left, right];
     },
     isStream: (input) => input instanceof stream.Readable,
-    getUser: (req, usernameKey) => req.auth?.credentials[usernameKey] || null,
+    getUser: (req, usernameKey) => req.auth?.credentials?.[usernameKey] ?? null,
     keepProps: (left, right, props) => {
         if (props != null && Array.isArray(props)) {
             [...new Set([Object.keys(left), Object.keys(right)].flat())].forEach((key) => {
@@ -79,7 +79,7 @@ export default {
         return [left, right];
     },
     getId: (params, payload) => {
-        const data = params || payload;
+        const data = params || payload || {};
         const DEFAULT_ID = "id";
 
         return data[DEFAULT_ID];

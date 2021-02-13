@@ -11,7 +11,7 @@ internals.schema = Schemas.baseSchema;
 
 internals.handleError = (settings, request, error) => {
     if (settings.showErrorsOnStdErr) {
-        console.error(`[${internals.pluginName}] ERROR: ${error.message}`);
+        console.error(`[${internals.pluginName}] ERROR: ${error.message}`, error);
     }
     request.log(["error", internals.pluginName], error.message);
 };
