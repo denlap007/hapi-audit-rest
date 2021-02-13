@@ -89,7 +89,7 @@ describe("PROXY flows with default settings", () => {
 
         expect(res.statusCode).to.equal(200);
 
-        expect(auditError).to.equal(null);
+        expect(auditError).to.be.null();
 
         expect(auditEvent).to.equal({
             application: "my-app",
@@ -129,7 +129,7 @@ describe("PROXY flows with default settings", () => {
 
         expect(res.statusCode).to.equal(200);
 
-        expect(auditError).to.equal(null);
+        expect(auditError).to.be.null();
 
         expect(auditEvent).to.equal({
             application: "my-app",
@@ -174,7 +174,7 @@ describe("PROXY flows with default settings", () => {
 
         expect(res.statusCode).to.equal(200);
 
-        expect(auditError).to.equal(null);
+        expect(auditError).to.be.null();
 
         expect(auditEvent).to.equal({
             application: "my-app",

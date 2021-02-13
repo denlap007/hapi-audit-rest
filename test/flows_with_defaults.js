@@ -77,7 +77,7 @@ describe("flows with default settings", () => {
 
         expect(res.statusCode).to.equal(200);
 
-        expect(auditError).to.equal(null);
+        expect(auditError).to.be.null();
 
         expect(auditEvent).to.equal({
             application: "my-app",
@@ -107,7 +107,7 @@ describe("flows with default settings", () => {
 
         expect(res.statusCode).to.equal(200);
 
-        expect(auditError).to.equal(null);
+        expect(auditError).to.be.null();
 
         expect(auditEvent).to.equal({
             application: "my-app",
@@ -142,7 +142,7 @@ describe("flows with default settings", () => {
 
         expect(res.statusCode).to.equal(200);
 
-        expect(auditError).to.equal(null);
+        expect(auditError).to.be.null();
 
         expect(auditEvent).to.equal({
             application: "my-app",
@@ -178,7 +178,7 @@ describe("flows with default settings", () => {
         expect(res.statusCode).to.equal(200);
         expect(res.result).to.equal(resPayload);
 
-        expect(auditError).to.equal(null);
+        expect(auditError).to.be.null();
 
         expect(auditEvent).to.equal({
             application: "my-app",
@@ -231,7 +231,7 @@ describe("flows with default settings", () => {
 
         expect(res.statusCode).to.equal(200);
 
-        expect(auditError).to.equal(null);
+        expect(auditError).to.be.null();
 
         expect(auditEvent).to.equal({
             application: "my-app",
@@ -281,7 +281,7 @@ describe("flows with default settings", () => {
 
         expect(res.statusCode).to.equal(200);
 
-        expect(auditError).to.equal(null);
+        expect(auditError).to.be.null();
 
         expect(auditEvent).to.equal({
             application: "my-app",
@@ -321,7 +321,7 @@ describe("flows with default settings", () => {
 
         expect(res.statusCode).to.equal(200);
 
-        expect(auditError).to.equal(null);
+        expect(auditError).to.be.null();
 
         expect(auditEvent).to.equal({
             application: "my-app",
