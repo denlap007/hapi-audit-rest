@@ -65,7 +65,6 @@ exports.plugin = {
                 const {
                     [internals.pluginName]: routeOptions = {},
                 } = request.route.settings.plugins;
-                const username = Utils.getUser(request, settings.usernameKey);
                 const {
                     url: { pathname },
                     method,
@@ -73,12 +72,12 @@ exports.plugin = {
                 } = request;
 
                 /**
-                 * skip audit if disabled on route, not within session scope, path does no match criteria
+                 * skip audit if disabled on route, without auth and authOnly enabled, path does not match criteria
                  * if this will be handled as a custom action skip to process on preResponse
                  */
                 if (
                     Utils.isDisabled(routeOptions) ||
-                    (settings.withAuth && !Utils.isLoggedIn(username)) ||
+                    (settings.authOnly && !Utils.hasAuth(request)) ||
                     !settings.isAuditable(pathname, method) ||
                     routeOptions.isAction
                 ) {
@@ -145,10 +144,10 @@ exports.plugin = {
                 } = request;
                 const { injected } = headers;
 
-                // skip audit if disabled on route, not in session, path does not match criteria, call failed
+                // skip audit if disabled on route, without auth and authOnly enabled, path does not match criteria, call failed
                 if (
                     Utils.isDisabled(routeOptions) ||
-                    (settings.withAuth && !Utils.isLoggedIn(username)) ||
+                    (settings.authOnly && !Utils.hasAuth(request)) ||
                     !settings.isAuditable(pathname, method) ||
                     !Utils.isSuccess(statusCode)
                 ) {
