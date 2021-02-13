@@ -57,8 +57,8 @@ describe("PROXY flows with default settings", () => {
             }
         });
 
-        server.events.on("hapi-audit-rest", (data) => {
-            auditEvent = data;
+        server.events.on("hapi-audit-rest", ({ auditLog }) => {
+            auditEvent = auditLog;
         });
     });
 

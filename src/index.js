@@ -267,7 +267,10 @@ exports.plugin = {
                 // skipp auditing of GET requests if enabled, of injected from plugin
                 if (Utils.shouldAuditRequest(method, settings.auditGetRequests, injected)) {
                     if (rec != null) {
-                        server.events.emit(internals.pluginName, rec);
+                        server.events.emit(internals.pluginName, {
+                            auditLog: rec,
+                            endpoint: routeEndpoint,
+                        });
                     } else {
                         throw new Error(
                             `Cannot audit null audit record for endpoint: ${routeEndpoint}`
