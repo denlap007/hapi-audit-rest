@@ -41,7 +41,7 @@ describe("flows with default settings", () => {
             {
                 plugin,
                 options: {
-                    sidUsernameAttribute: "userName",
+                    usernameKey: "userName",
                 },
             },
         ]);

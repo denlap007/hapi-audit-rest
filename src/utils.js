@@ -61,8 +61,8 @@ export default {
         return [left, right];
     },
     isStream: (input) => input instanceof stream.Readable,
-    getUser: (req, sidUsernameAttribute) =>
-        req.auth.isAuthenticated ? req.auth.credentials[sidUsernameAttribute] : null,
+    getUser: (req, usernameKey) =>
+        req.auth.isAuthenticated ? req.auth.credentials[usernameKey] : null,
 
     keepProps: (left, right, props) => {
         if (props != null && Array.isArray(props)) {
