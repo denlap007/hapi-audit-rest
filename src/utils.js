@@ -10,7 +10,7 @@ export default {
     isUpdate: (method) => method === "put",
     isDelete: (method) => method === "delete",
     isDisabled: (auditing) => auditing === false,
-    isLoggedIn: (username) => username != null,
+    hasAuth: (req) => req.auth.isAuthenticated,
     toEndpoint: (method, path, getPath) => (getPath ? `${method}:${getPath}` : `${method}:${path}`),
     isSuccess: (code) =>
         Number.isInteger(code) && parseInt(code, 10) >= 200 && parseInt(code, 10) <= 299,
@@ -61,9 +61,7 @@ export default {
         return [left, right];
     },
     isStream: (input) => input instanceof stream.Readable,
-    getUser: (req, usernameKey) =>
-        req.auth.isAuthenticated ? req.auth.credentials[usernameKey] : null,
-
+    getUser: (req, usernameKey) => req.auth?.credentials[usernameKey] || null,
     keepProps: (left, right, props) => {
         if (props != null && Array.isArray(props)) {
             [...new Set([Object.keys(left), Object.keys(right)].flat())].forEach((key) => {
