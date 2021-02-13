@@ -78,7 +78,7 @@ exports.plugin = {
                  */
                 if (
                     Utils.isDisabled(routeOptions) ||
-                    !Utils.isLoggedIn(username) ||
+                    (settings.withSession && !Utils.isLoggedIn(username)) ||
                     !settings.isAuditable(pathname, method) ||
                     routeOptions.isAction
                 ) {
@@ -148,7 +148,7 @@ exports.plugin = {
                 // skip audit if disabled on route, not in session, path does not match criteria, call failed
                 if (
                     Utils.isDisabled(routeOptions) ||
-                    !Utils.isLoggedIn(username) ||
+                    (settings.withSession && !Utils.isLoggedIn(username)) ||
                     !settings.isAuditable(pathname, method) ||
                     !Utils.isSuccess(statusCode)
                 ) {
