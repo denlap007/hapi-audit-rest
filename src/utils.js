@@ -11,32 +11,13 @@ export default {
     isDelete: (method) => method === "delete",
     isDisabled: (auditing) => auditing === false,
     isLoggedIn: (username) => username != null,
-    getEntity: (definedEntity, path) => {
-        if (definedEntity) return definedEntity;
-
-        if (typeof path === "string") {
-            let entity = "";
-
-            if (path.startsWith("/api")) {
-                entity = path.split("/")[2];
-            }
-
-            if (!entity) {
-                throw new Error(`[getEntity] ERROR: Could not extract entity for path: ${path}`);
-            }
-
-            return entity;
-        }
-        throw new Error(
-            `[getEntity] ERROR: Expected path to be of type string and instead got: ${typeof path}`
-        );
-    },
     toEndpoint: (method, path, getPath) => (getPath ? `${method}:${getPath}` : `${method}:${path}`),
     isSuccess: (code) =>
         Number.isInteger(code) && parseInt(code, 10) >= 200 && parseInt(code, 10) <= 299,
     initMutation: ({ method: httpVerb, clientId, username, auditAsUpdate }) => ({
         entity,
         entityId,
+        action,
         originalValues,
         newValues,
     }) => {
@@ -47,6 +28,7 @@ export default {
             application: clientId,
             entity,
             entityId,
+            action,
             username,
             originalValues,
             newValues,
@@ -98,32 +80,10 @@ export default {
 
         return [left, right];
     },
-    checkOldVals: (oldVals, routeEndpoint) => {
-        if (oldVals == null) {
-            throw new Error(`Cannot get data before update on ${routeEndpoint}`);
-        }
-    },
-    getId: (params, id, payload) => {
+    getId: (params, payload) => {
+        const data = params || payload;
         const DEFAULT_ID = "id";
-        let { keys, source } = id || {};
-        let data = params;
 
-        if (source === "payload" || params == null) {
-            data = payload;
-        }
-
-        if (keys == null) {
-            keys = [DEFAULT_ID];
-        }
-
-        return keys.reduce((acc, key, idx, arr) => {
-            const val = data[key];
-            // when only id is provided, do not be verbose
-            if (arr.length === 1 && key === DEFAULT_ID) {
-                return val;
-            }
-
-            return acc === "" ? `${key}: ${val}` : `${acc}, ${key}: ${val}`;
-        }, "");
+        return data[DEFAULT_ID];
     },
 };
