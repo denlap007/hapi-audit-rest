@@ -36,7 +36,12 @@ export default {
         diffFunc: Validate.func().arity(2).default(diff),
         disableCache: Validate.boolean().default(false),
         clientId: Validate.string().default(constants.DERAULT_CLIENT_ID),
-        sidUsernameAttribute: Validate.string().required(),
+        withSession: Validate.boolean().default(true),
+        sidUsernameAttribute: Validate.string().when("withSession", {
+            is: true,
+            then: Validate.any(),
+            otherwise: Validate.string().required(),
+        }),
         cacheExpiresIn: Validate.number()
             .positive()
             .min(300000)
