@@ -34,7 +34,7 @@ exports.plugin = {
         const settings = Validate.attempt(
             options,
             internals.schema,
-            `[${internals.pluginName}]: Invalid plugin options!`
+            `[${internals.pluginName}]: Invalid registration options!`
         );
         // initialize cache
         let oldValsCache = new Map();
@@ -54,7 +54,7 @@ exports.plugin = {
                     Validate.attempt(
                         rops,
                         Schemas.routeSchema,
-                        `[${internals.pluginName}]: Invalid options on route ${route.path}`
+                        `[${internals.pluginName}]: Invalid route options on ${route.path}`
                     );
                 });
         });
@@ -272,9 +272,7 @@ exports.plugin = {
                             endpoint: routeEndpoint,
                         });
                     } else {
-                        throw new Error(
-                            `Cannot audit null audit record for endpoint: ${routeEndpoint}`
-                        );
+                        throw new Error(`Null auditLog record for endpoint: ${routeEndpoint}`);
                     }
                 }
             } catch (error) {
