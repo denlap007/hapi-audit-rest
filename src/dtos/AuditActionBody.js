@@ -1,6 +1,6 @@
 class AuditActionBody {
     constructor(input) {
-        const { entity, entityId, action, username, timestamp = new Date(), data = {} } = input;
+        const { entity, entityId, action, username, timestamp = new Date(), data } = input;
 
         this.entity = entity;
         this.entityId = entityId;

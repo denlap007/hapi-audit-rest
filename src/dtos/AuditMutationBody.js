@@ -5,8 +5,8 @@ class AuditMutationBody {
             entityId,
             action,
             username,
-            originalValues = {},
-            newValues = {},
+            originalValues,
+            newValues,
             timestamp = new Date(),
         } = input;
 
