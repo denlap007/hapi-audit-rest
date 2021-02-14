@@ -6,10 +6,10 @@ class AuditAction {
         const {
             type = EVENT_TYPE.SEARCH,
             entity,
-            entityId,
+            entityId = null,
             action = EVENT_TYPE.SEARCH,
             username,
-            data = {},
+            data = null,
             outcome = AUDIT_OUTCOME.SUCCESS,
             application,
         } = input;

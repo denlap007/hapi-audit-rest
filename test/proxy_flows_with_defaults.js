@@ -96,7 +96,7 @@ describe("PROXY flows with default settings", () => {
             type: "SEARCH",
             body: {
                 entity: "test",
-                entityId: undefined,
+                entityId: null,
                 action: "SEARCH",
                 username: "user",
                 data: {},
@@ -136,7 +136,7 @@ describe("PROXY flows with default settings", () => {
             type: "SEARCH",
             body: {
                 entity: "test",
-                entityId: undefined,
+                entityId: null,
                 action: "SEARCH",
                 username: "user",
                 data: {
@@ -286,7 +286,7 @@ describe("PROXY flows with default settings", () => {
                 entityId: 1,
                 action: "CREATE",
                 username: "user",
-                originalValues: {},
+                originalValues: null,
                 newValues: {
                     id: 1,
                     a: "a",
@@ -490,7 +490,7 @@ describe("PROXY flows with default settings", () => {
                 action: "DELETE",
                 username: "user",
                 originalValues: oldValues,
-                newValues: {},
+                newValues: null,
                 timestamp: auditEvent.body.timestamp,
             },
             outcome: "Success",

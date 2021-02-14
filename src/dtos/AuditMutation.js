@@ -11,8 +11,8 @@ class AuditMutation {
             username,
             outcome = AUDIT_OUTCOME.SUCCESS,
             application,
-            originalValues = {},
-            newValues = {},
+            originalValues = null,
+            newValues = null,
         } = input;
         let httpAction = null;
 
