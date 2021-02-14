@@ -16,10 +16,10 @@ internals.handleError = (settings, request, error) => {
     request.log(["error", internals.pluginName], error.message);
 };
 
-internals.fetchValues = async ({ server, headers, auth, url: { pathname } }, customGetPath) =>
+internals.fetchValues = async ({ server, headers, auth, url: { pathname } }, pathOverride) =>
     server.inject({
         method: "GET",
-        url: customGetPath || pathname,
+        url: pathOverride || pathname,
         headers: { ...headers, injected: "true" },
         auth: auth.isAuthenticated ? auth : undefined,
     });
@@ -72,7 +72,7 @@ exports.plugin = {
                 } = request;
 
                 /**
-                 * skip audit if disabled on route, without auth and authOnly enabled, path does not match criteria
+                 * skip audit if disabled on route, not authenticated and authOnly enabled, path does not match criteria
                  * if this will be handled as a custom action skip to process on preResponse
                  */
                 if (
@@ -88,11 +88,11 @@ exports.plugin = {
                  * Ovveride, creates GET endpoint using the value of the specified path param as an id
                  * and the specified path if provided or else the current
                  */
-                const customGetPath = (routeOptions?.get?.path || pathname).replace(
+                const pathOverride = (routeOptions?.get?.path || pathname).replace(
                     new RegExp(/{.*}/, "gi"),
                     params[routeOptions?.get?.sourceId]
                 );
-                const getEndpoint = Utils.toEndpoint("get", pathname, customGetPath);
+                const getEndpoint = Utils.toEndpoint("get", pathname, pathOverride);
                 const routeEndpoint = Utils.toEndpoint(method, pathname);
 
                 if (Utils.isUpdate(method) || routeOptions.auditAsUpdate) {
@@ -105,7 +105,7 @@ exports.plugin = {
                     if (oldVals == null) {
                         const { payload: data } = await internals.fetchValues(
                             request,
-                            customGetPath
+                            pathOverride
                         );
                         oldVals = JSON.parse(data);
                         oldValsCache.set(getEndpoint, oldVals);
@@ -115,7 +115,7 @@ exports.plugin = {
                         throw new Error(`Cannot get data before update on ${routeEndpoint}`);
                     }
                 } else if (Utils.isDelete(method)) {
-                    const { payload } = await internals.fetchValues(request, customGetPath);
+                    const { payload } = await internals.fetchValues(request, pathOverride);
                     const originalValues = JSON.parse(payload);
                     oldValsCache.set(getEndpoint, originalValues);
                 }
@@ -144,7 +144,7 @@ exports.plugin = {
                 } = request;
                 const { injected } = headers;
 
-                // skip audit if disabled on route, without auth and authOnly enabled, path does not match criteria, call failed
+                // skip audit if disabled on route, not authenticated and authOnly enabled, path does not match criteria, call failed
                 if (
                     Utils.isDisabled(routeOptions) ||
                     (settings.authOnly && !Utils.hasAuth(request)) ||
@@ -154,7 +154,7 @@ exports.plugin = {
                     return h.continue;
                 }
 
-                const customGetPath = (routeOptions?.get?.path || pathname).replace(
+                const pathOverride = (routeOptions?.get?.path || pathname).replace(
                     new RegExp(/{.*}/, "gi"),
                     params[routeOptions?.get?.sourceId]
                 );
@@ -169,7 +169,7 @@ exports.plugin = {
                     username,
                 });
                 const routeEndpoint = Utils.toEndpoint(method, pathname);
-                const getEndpoint = Utils.toEndpoint("get", pathname, customGetPath);
+                const getEndpoint = Utils.toEndpoint("get", pathname, pathOverride);
                 let auditLog = null;
 
                 if (Utils.isRead(method) && injected == null) {
@@ -211,7 +211,7 @@ exports.plugin = {
                     if (newVals == null || routeOptions.fetchNewValues) {
                         const { payload: data } = await internals.fetchValues(
                             request,
-                            customGetPath
+                            pathOverride
                         );
                         newVals = JSON.parse(data);
                     }
