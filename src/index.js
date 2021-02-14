@@ -21,7 +21,7 @@ internals.fetchValues = async ({ server, headers, auth, url: { pathname } }, cus
         method: "GET",
         url: customGetPath || pathname,
         headers: { ...headers, injected: "true" },
-        auth,
+        auth: auth.isAuthenticated ? auth : undefined,
     });
 
 exports.plugin = {
@@ -170,7 +170,7 @@ exports.plugin = {
                 });
                 const routeEndpoint = Utils.toEndpoint(method, pathname);
                 const getEndpoint = Utils.toEndpoint("get", pathname, customGetPath);
-                let rec = null;
+                let auditLog = null;
 
                 if (Utils.isRead(method) && injected == null) {
                     if (!settings.disableCache && !Utils.isStream(resp)) {
@@ -179,7 +179,7 @@ exports.plugin = {
 
                     const entityId = Utils.getId(params);
 
-                    rec = createAction({
+                    auditLog = createAction({
                         entity: settings.getEntity(pathname),
                         entityId,
                         data: query,
@@ -193,7 +193,7 @@ exports.plugin = {
                         throw new Error(`Cannot raed streamed payload on ${routeEndpoint}`);
                     }
 
-                    rec = createAction({
+                    auditLog = createAction({
                         entity: settings.getEntity(pathname),
                         entityId: Utils.getId(params, reqPayload),
                         data: reqPayload,
@@ -218,7 +218,7 @@ exports.plugin = {
 
                     const [originalValues, newValues] = settings.diffFunc(oldVals, newVals);
 
-                    rec = createMutation({
+                    auditLog = createMutation({
                         entity: settings.getEntity(pathname),
                         entityId: Utils.getId(params, newVals),
                         originalValues,
@@ -243,7 +243,7 @@ exports.plugin = {
                     oldValsCache.delete(getEndpoint);
                 } else if (Utils.isDelete(method)) {
                     const oldVals = oldValsCache.get(getEndpoint);
-                    rec = createMutation({
+                    auditLog = createMutation({
                         entity: settings.getEntity(pathname),
                         entityId: Utils.getId(params, oldVals),
                         originalValues: oldVals,
@@ -253,7 +253,7 @@ exports.plugin = {
                     if (!Utils.isStream(resp)) {
                         const data = Utils.gotResponseData(resp) ? resp : reqPayload;
 
-                        rec = createMutation({
+                        auditLog = createMutation({
                             entity: settings.getEntity(pathname),
                             entityId: Utils.getId(null, data),
                             newValues: data,
@@ -266,9 +266,9 @@ exports.plugin = {
 
                 // skipp auditing of GET requests if enabled, of injected from plugin
                 if (Utils.shouldAuditRequest(method, settings.auditGetRequests, injected)) {
-                    if (rec != null) {
+                    if (auditLog != null) {
                         server.events.emit(internals.pluginName, {
-                            auditLog: rec,
+                            auditLog,
                             endpoint: routeEndpoint,
                         });
                     } else {
