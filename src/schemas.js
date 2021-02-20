@@ -67,4 +67,28 @@ export default {
         }),
         Validate.boolean()
     ),
+    mutationSchema: Validate.alternatives(
+        Validate.object({
+            type: Validate.string(),
+            entity: Validate.string(),
+            entityId: Validate.alternatives(
+                Validate.number(),
+                Validate.string().allow("").allow(null)
+            ),
+            action: Validate.string(),
+            originalValues: Validate.alternatives(Validate.object(), Validate.array(), null),
+            newValues: Validate.alternatives(Validate.object(), Validate.array(), null),
+        }),
+        null
+    ),
+    actionSchema: Validate.alternatives(
+        Validate.object({
+            type: Validate.string(),
+            entity: Validate.string(),
+            entityId: Validate.string().allow("").allow(null),
+            action: Validate.string(),
+            data: Validate.object().allow(null),
+        }),
+        null
+    ),
 };

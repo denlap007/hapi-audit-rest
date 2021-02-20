@@ -85,8 +85,7 @@ exports.plugin = {
                 }
 
                 /**
-                 * Ovveride, creates GET endpoint using the value of the specified path param as an id
-                 * and the specified path if provided or else the current
+                 * Ovveride, creates GET endpoint with specified path param as an id and the specified path or current
                  */
                 const pathOverride = (routeOptions?.get?.path || pathname).replace(
                     new RegExp(/{.*}/, "gi"),
@@ -96,11 +95,7 @@ exports.plugin = {
                 const routeEndpoint = Utils.toEndpoint(method, pathname);
 
                 if (Utils.isUpdate(method) || routeOptions.auditAsUpdate) {
-                    let oldVals = null;
-
-                    if (!settings.disableCache) {
-                        oldVals = oldValsCache.get(getEndpoint);
-                    }
+                    let oldVals = settings.disableCache ? null : oldValsCache.get(getEndpoint);
 
                     if (oldVals == null) {
                         const { payload: data } = await internals.fetchValues(
@@ -177,13 +172,14 @@ exports.plugin = {
                         oldValsCache.set(getEndpoint, resp);
                     }
 
-                    const entityId = Utils.getId(params);
+                    auditLog = routeOptions.ext?.({ headers, query, params });
+                    Validate.assert(auditLog, Schemas.actionSchema);
 
                     auditLog = createAction({
                         entity: settings.getEntity(pathname),
-                        entityId,
+                        entityId: Utils.getId(params),
                         data: query,
-                        ...routeOptions.ext?.({ headers, query, params }),
+                        ...auditLog,
                     });
                 } else if (
                     (Utils.isUpdate(method) || Utils.isCreate(method)) &&
@@ -193,20 +189,19 @@ exports.plugin = {
                         throw new Error(`Cannot raed streamed payload on ${routeEndpoint}`);
                     }
 
+                    auditLog = routeOptions.ext?.({ headers, query, params, payload: reqPayload });
+                    Validate.assert(auditLog, Schemas.actionSchema);
+
                     auditLog = createAction({
                         entity: settings.getEntity(pathname),
                         entityId: Utils.getId(params, reqPayload),
                         data: reqPayload,
-                        ...routeOptions.ext?.({ headers, query, params, payload: reqPayload }),
+                        ...auditLog,
                     });
                 } else if (Utils.isUpdate(method) || routeOptions.auditAsUpdate) {
                     const oldVals = oldValsCache.get(getEndpoint);
-                    let newVals = null;
-
                     // check if proxied to upstream server
-                    if (!Utils.isStream(reqPayload)) {
-                        newVals = Utils.clone(reqPayload);
-                    }
+                    let newVals = Utils.isStream(reqPayload) ? null : Utils.clone(reqPayload);
 
                     if (newVals == null || routeOptions.fetchNewValues) {
                         const { payload: data } = await internals.fetchValues(
@@ -216,6 +211,23 @@ exports.plugin = {
                         newVals = JSON.parse(data);
                     }
 
+                    auditLog = routeOptions.ext?.({
+                        headers,
+                        query,
+                        params,
+                        oldVals,
+                        newVals,
+                        diff: ({ diffOnly, skipDiff }) => {
+                            if (diffOnly) {
+                                Utils.keepProps(oldVals, newVals, diffOnly);
+                            } else {
+                                Utils.removeProps(oldVals, newVals, skipDiff);
+                            }
+                            return settings.diffFunc(oldVals, newVals);
+                        },
+                    });
+                    Validate.assert(auditLog, Schemas.mutationSchema);
+
                     const [originalValues, newValues] = settings.diffFunc(oldVals, newVals);
 
                     auditLog = createMutation({
@@ -223,41 +235,34 @@ exports.plugin = {
                         entityId: Utils.getId(params, newVals),
                         originalValues,
                         newValues,
-                        ...routeOptions.ext?.({
-                            headers,
-                            query,
-                            params,
-                            oldVals,
-                            newVals,
-                            diff: ({ diffOnly, skipDiff }) => {
-                                if (diffOnly) {
-                                    Utils.keepProps(oldVals, newVals, diffOnly);
-                                } else {
-                                    Utils.removeProps(oldVals, newVals, skipDiff);
-                                }
-                                return settings.diffFunc(oldVals, newVals);
-                            },
-                        }),
+                        ...auditLog,
                     });
 
                     oldValsCache.delete(getEndpoint);
                 } else if (Utils.isDelete(method)) {
                     const oldVals = oldValsCache.get(getEndpoint);
+
+                    auditLog = routeOptions.ext?.({ headers, query, params, oldVals });
+                    Validate.assert(auditLog, Schemas.mutationSchema);
+
                     auditLog = createMutation({
                         entity: settings.getEntity(pathname),
                         entityId: Utils.getId(params, oldVals),
                         originalValues: oldVals,
-                        ...routeOptions.ext?.({ headers, query, params, oldVals }),
+                        ...auditLog,
                     });
                 } else if (Utils.isCreate(method)) {
                     if (!Utils.isStream(resp)) {
                         const data = Utils.gotResponseData(resp) ? resp : reqPayload;
 
+                        auditLog = routeOptions.ext?.({ headers, query, params, newVals: data });
+                        Validate.assert(auditLog, Schemas.mutationSchema);
+
                         auditLog = createMutation({
                             entity: settings.getEntity(pathname),
                             entityId: Utils.getId(null, data),
                             newValues: data,
-                            ...routeOptions.ext?.({ headers, query, params, newVals: data }),
+                            ...auditLog,
                         });
                     } else {
                         throw new Error(`Cannot raed streamed response on ${routeEndpoint}`);
