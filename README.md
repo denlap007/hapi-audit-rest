@@ -1,41 +1,160 @@
 # hapi-audit-rest
 
-[Hapi.js] plugin that **creates audit records** for **rest API calls** of a Hapi.js server. Records can be submitted to an auditing service or stored to the DB directly.
+[Hapi.js] plugin that that generates information for **auditing** purposes on **rest API calls**.
 
-# Requirements
+## Requirements
 
-Works with Hapi v17 or higher
+Works with Hapi **v17** or higher
 
-# Installation
+## Installation
 
 `npm i -S hapi-audit-rest`
 
-# About
+## About
 
-This is a small plugin that can generate information for auditing purposes. A unit of information for that purpose is called an auditing record.
+Used to monitor **CRUD operations of users on resources**. For every request an **event** is emitted with auditing data.
 
-For REST APIs, **CRUD operations of users on resources** can be monitored. For every request, an **auditing event** is emitted. An event handler is provided to handle the event.
+## Quickstart
 
-Two events are pre-configured:
+```js
+await server.register({
+    plugin: require("hapi-audit-rest"),
+});
+```
 
-- **SEARCH**
-- **MUTATION**
+## Examples
 
-All **GET requests** are considered **SEARCH events**. A Mutation event can be one of **POST, PUT, DELETE requests**. An event is also correlated with an ACTION. For Mutation events:
+Consider a CRUD API on users.
 
-- **PUT** request is an **UPDATE** action
-- **POST** request is a **CREATE** action
-- **DELETE** request is a **DELETE** action
+### GET Requests
 
-For mutations, the affected entity, its id and the values (payload) before and after the action are recorded. A diff function computes the differences observed because of the action. Users can bind their own function implementations, although a reference implementation may be provided in the future for completeness.
+```js
+// emitted data on GET /api/users request
+const data = {
+    application: "my-app",
+    type: "SEARCH",
+    body: {
+        entity: "users",
+        entityId: null,
+        action: "SEARCH",
+        username: null, // or the username if authenticated
+        timestamp: "2021-02-13T18:11:25.917Z",
+        data: {},
+    },
+    outcome: "Success",
+};
 
-# Features
+// emitted data on GET /api/users/1 request
+const data = {
+    application: "my-app",
+    type: "SEARCH",
+    body: {
+        entity: "users",
+        entityId: "1",
+        action: "SEARCH",
+        username: null, // or the username if authenticated
+        timestamp: "2021-02-13T18:11:25.917Z",
+        data: {},
+    },
+    outcome: "Success",
+};
+```
 
-# Usage
+### POST Requests
 
-# Options
+```js
+// consider the payload
+const user = {
+    username: "user",
+    firstName: "first",
+    lastName: "last",
+};
 
-# License
+// emitted data on POST /api/users request with payload user, created user with id returned in response
+const data = {
+    application: "my-app",
+    type: "MUTATION",
+    body: {
+        entity: "users",
+        entityId: 1,
+        action: "CREATE",
+        username: null, // or the username if authenticated
+        originalValues: null,
+        newValues: {
+            id: 1,
+            username: "user",
+            firstName: "first",
+            lastName: "last",
+        },
+        timestamp: "2021-02-20T20:53:04.821Z",
+    },
+    outcome: "Success",
+};
+```
+
+### DELETE Requests
+
+```js
+// emitted data on DELETE /api/users/1 request
+const data = {
+    application: "my-app",
+    type: "MUTATION",
+    body: {
+        entity: "users",
+        entityId: 1,
+        action: "DELETE",
+        username: null, // or the username if authenticated
+        originalValues: {
+            id: 1,
+            username: "user",
+            firstName: "first",
+            lastName: "last",
+        },
+        newValues: null,
+        timestamp: "2021-02-20T20:53:04.821Z",
+    },
+    outcome: "Success",
+};
+```
+
+### PUT Requests
+
+```js
+// consider the payload
+const user = {
+    firstName: "updated first",
+};
+// emitted data on PUT /api/users/1 request
+const data = {
+    application: "my-app",
+    type: "MUTATION",
+    body: {
+        entity: "users",
+        entityId: 1,
+        action: "UPDATE",
+        username: null, // or the username if authenticated
+        originalValues: {
+            id: 1,
+            username: "user",
+            firstName: "first",
+            lastName: "last",
+        },
+        newValues: {
+            firstName: "updated first", // use option fetchNewValues for the whole updated entity object
+        },
+        timestamp: "2021-02-20T20:53:04.821Z",
+    },
+    outcome: "Success",
+};
+```
+
+## API
+
+## Features
+
+## Options
+
+## License
 
 hapi-audit-rest is licensed under a MIT License.
 
