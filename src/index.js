@@ -72,12 +72,12 @@ exports.plugin = {
                 } = request;
 
                 /**
-                 * skip audit if disabled on route, not authenticated and authOnly enabled, path does not match criteria
+                 * skip audit if disabled on route, not authenticated and auditAuthOnly enabled, path does not match criteria
                  * if this will be handled as a custom action skip to process on preResponse
                  */
                 if (
                     Utils.isDisabled(routeOptions) ||
-                    (settings.authOnly && !Utils.hasAuth(request)) ||
+                    (settings.auditAuthOnly && !Utils.hasAuth(request)) ||
                     !settings.isAuditable(pathname, method) ||
                     routeOptions.isAction
                 ) {
@@ -139,10 +139,10 @@ exports.plugin = {
                 } = request;
                 const { injected } = headers;
 
-                // skip audit if disabled on route, not authenticated and authOnly enabled, path does not match criteria, call failed
+                // skip audit if disabled on route, not authenticated and auditAuthOnly enabled, path does not match criteria, call failed
                 if (
                     Utils.isDisabled(routeOptions) ||
-                    (settings.authOnly && !Utils.hasAuth(request)) ||
+                    (settings.auditAuthOnly && !Utils.hasAuth(request)) ||
                     !settings.isAuditable(pathname, method) ||
                     !Utils.isSuccess(statusCode)
                 ) {

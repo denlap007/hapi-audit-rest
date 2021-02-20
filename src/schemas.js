@@ -36,8 +36,8 @@ export default {
         diffFunc: Validate.func().arity(2).default(diff),
         disableCache: Validate.boolean().default(false),
         clientId: Validate.string().default(constants.DERAULT_CLIENT_ID),
-        authOnly: Validate.boolean().default(false),
-        usernameKey: Validate.string().when("authOnly", {
+        auditAuthOnly: Validate.boolean().default(false),
+        usernameKey: Validate.string().when("auditAuthOnly", {
             is: true,
             then: Validate.string().required(),
             otherwise: Validate.any(),
