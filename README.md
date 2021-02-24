@@ -1,6 +1,6 @@
 # hapi-audit-rest
 
-[Hapi.js] plugin that that generates information for **auditing** purposes on **rest API calls**.
+Small opinionated [Hapi.js] plugin that generates **audit logs** for **REST APIs**.
 
 ## Requirements
 
@@ -12,7 +12,12 @@ Works with Hapi **v17** or higher
 
 ## About
 
-Used to monitor **CRUD operations of users on resources**. For every request an **event** is emitted with auditing data.
+Creates audit log documents:
+
+-   **Actions**: represent general purpose interactions i.e. search (GET).
+-   **Mutations**: track **old and new state** of a resource (POST, PUT, DELETE), to effectively **reason about state changes**.
+
+For every request an **event** is emitted with an **audit log** (action or mutation) document.
 
 ## Quickstart
 
@@ -22,7 +27,7 @@ await server.register({
 });
 ```
 
-## Examples
+## Example Audit Log Documents
 
 Consider a CRUD API on users.
 
@@ -147,8 +152,6 @@ const data = {
     outcome: "Success",
 };
 ```
-
-## API
 
 ## Features
 
