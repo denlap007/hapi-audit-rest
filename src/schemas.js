@@ -54,10 +54,7 @@ export default {
         Validate.object({
             ext: Validate.func(),
             isAction: Validate.boolean().default(false),
-            get: Validate.object({
-                path: Validate.string().required(),
-                sourceId: Validate.string().default(constants.DEFAULT_SOURCE_ID),
-            }),
+            getPath: Validate.func(),
             auditAsUpdate: Validate.boolean().when("isAction", {
                 is: true,
                 then: false,
@@ -91,4 +88,5 @@ export default {
         }),
         null
     ),
+    getRoutePath: Validate.string().allow(null).default(null),
 };

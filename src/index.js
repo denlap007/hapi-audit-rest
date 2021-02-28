@@ -59,7 +59,6 @@ exports.plugin = {
                 });
         });
 
-        // ------------------------------- PRE-HANDLER ------------------------- //
         server.ext("onPreHandler", async (request, h) => {
             try {
                 const {
@@ -69,6 +68,7 @@ exports.plugin = {
                     url: { pathname },
                     method,
                     params,
+                    query,
                 } = request;
 
                 /**
@@ -84,12 +84,10 @@ exports.plugin = {
                     return h.continue;
                 }
 
-                /**
-                 * Ovveride, creates GET endpoint with specified path param as an id and the specified path or current
-                 */
-                const pathOverride = (routeOptions?.get?.path || pathname).replace(
-                    new RegExp(/{.*}/, "gi"),
-                    params[routeOptions?.get?.sourceId]
+                // Ovveride, creates GET endpoint
+                const pathOverride = Validate.attempt(
+                    routeOptions.getPath?.({ query, params }),
+                    Schemas.getRoutePath
                 );
                 const getEndpoint = Utils.toEndpoint("get", pathname, pathOverride);
                 const routeEndpoint = Utils.toEndpoint(method, pathname);
@@ -121,7 +119,6 @@ exports.plugin = {
             return h.continue;
         });
 
-        // ------------------------------- PRE-RESPONSE ------------------------- //
         server.ext("onPreResponse", async (request, h) => {
             try {
                 const {
@@ -149,9 +146,9 @@ exports.plugin = {
                     return h.continue;
                 }
 
-                const pathOverride = (routeOptions?.get?.path || pathname).replace(
-                    new RegExp(/{.*}/, "gi"),
-                    params[routeOptions?.get?.sourceId]
+                const pathOverride = Validate.attempt(
+                    routeOptions.getPath?.({ query, params }),
+                    Schemas.getRoutePath
                 );
                 const createMutation = Utils.initMutation({
                     method,
