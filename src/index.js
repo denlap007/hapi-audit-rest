@@ -93,7 +93,7 @@ exports.plugin = {
                 const routeEndpoint = Utils.toEndpoint(method, pathname);
 
                 if (Utils.isUpdate(method) || routeOptions.auditAsUpdate) {
-                    let oldVals = settings.disableCache ? null : oldValsCache.get(getEndpoint);
+                    let oldVals = settings.cacheEnabled ? oldValsCache.get(getEndpoint) : null;
 
                     if (oldVals == null) {
                         const { payload: data } = await internals.fetchValues(
@@ -165,7 +165,7 @@ exports.plugin = {
                 let auditLog = null;
 
                 if (Utils.isRead(method) && injected == null) {
-                    if (!settings.disableCache && !Utils.isStream(resp)) {
+                    if (settings.cacheEnabled && !Utils.isStream(resp)) {
                         oldValsCache.set(getEndpoint, resp);
                     }
 

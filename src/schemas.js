@@ -34,7 +34,7 @@ export default {
         auditGetRequests: Validate.boolean().default(true),
         showErrorsOnStdErr: Validate.boolean().default(true),
         diffFunc: Validate.func().arity(2).default(diff),
-        disableCache: Validate.boolean().default(false),
+        cacheEnabled: Validate.boolean().default(true),
         clientId: Validate.string().default(constants.DERAULT_CLIENT_ID),
         auditAuthOnly: Validate.boolean().default(false),
         usernameKey: Validate.string().when("auditAuthOnly", {
