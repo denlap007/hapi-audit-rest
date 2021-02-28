@@ -41,7 +41,7 @@ exports.plugin = {
 
         // register event and handler
         server.event(internals.pluginName);
-        server.events.on(internals.pluginName, settings.eventHanler);
+        server.events.on(internals.pluginName, settings.eventHandler);
 
         // plugin options route validation
         server.ext("onPreStart", () => {

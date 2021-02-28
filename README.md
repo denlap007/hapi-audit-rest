@@ -44,7 +44,12 @@ Consider a CRUD API on users.
         action: "SEARCH",
         username: null, // or the username if authenticated
         timestamp: "2021-02-13T18:11:25.917Z",
-        data: {},
+        data: {
+            limit: 10,
+            sort: 'asc',
+            page: 1,
+            column: 'username'
+        },
     },
     outcome: "Success",
 };
@@ -71,8 +76,8 @@ Consider a CRUD API on users.
 // consider the payload
 const user = {
     username: "user",
-    firstName: "first",
-    lastName: "last",
+    firstName: "first name",
+    lastName: "last name",
 };
 
 // emitted data on POST /api/users request with payload user, created user with id returned in response
@@ -88,8 +93,8 @@ const user = {
         newValues: {
             id: 1,
             username: "user",
-            firstName: "first",
-            lastName: "last",
+            firstName: "first name",
+            lastName: "last name",
         },
         timestamp: "2021-02-20T20:53:04.821Z",
     },
@@ -112,8 +117,8 @@ const user = {
         originalValues: {
             id: 1,
             username: "user",
-            firstName: "first",
-            lastName: "last",
+            firstName: "first name",
+            lastName: "last name",
         },
         newValues: null,
         timestamp: "2021-02-20T20:53:04.821Z",
@@ -141,8 +146,8 @@ const user = {
         originalValues: {
             id: 1,
             username: "user",
-            firstName: "first",
-            lastName: "last",
+            firstName: "first name",
+            lastName: "last name",
         },
         newValues: {
             firstName: "updated first", // use option fetchNewValues for the whole updated entity object
@@ -161,14 +166,14 @@ const user = {
 | ------------------ | ------------------------- | ------------------------ | -------------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | auditGetRequests   | `Boolean`                 | true                     | true\|false    | no                               | Enable/Disable auditing of GET requests.                                                                                                                                                                                            |
 | showErrorsOnStdErr | `Boolean`                 | true                     | true\|false    | no                               | Display errors on std error stream.                                                                                                                                                                                                 |
-| diffFunc           | `Function`                | _provided_               |                | no                               | External function to diff old and new values, Must return an array with two elements: old values and new values, with that order. **The default** implementation `returns` **fetched old and new values**.                          |
+| diffFunc           | `Function`                | _provided_               |                | no                               | External function to diff old and new values, Must `return` an array with two elements: old values and new values, with that order. **The default** implementation `returns` **fetched old and new values**.                        |
 | disableCache       | `Boolean`                 | false                    | true\|false    | no                               | Enable/Disable internal cache. **Use cache** only if running an **one instance server**. If a GET by id is triggered before an update (PUT), old values will be loaded from cache instead of requiring an extra GET by id API call. |
 | clientId           | `String`                  | "my-app"                 |                | no                               | Application instance name or auth client id.                                                                                                                                                                                        |
 | auditAuthOnly      | ` Boolean`                | false                    | true\|false    | no                               | Enable/Disable auditing of **only authenticated requests**.                                                                                                                                                                         |
 | usernameKey        | `String`                  |                          |                | _yes when auditAuthOnly enabled_ | The path/key to the username stored in _request.auth.credentials_ object.                                                                                                                                                           |
 | cacheExpiresIn     | `Number Positive Integer` | 900000 (msecs - 15 mins) | >= 300000      | no                               | Time in msecs that cache expires (when _disableCache = false_).                                                                                                                                                                     |
 | isAuditable        | `Function`                | _provided_               |                | no                               | Checks if current path is auditable. **The default** implementation checks if **path starts with /api**                                                                                                                             |
-| eventHanler        | `Function`                | _provided_               |                | no                               | Handler for the emitted events, invoked with _named arguments_ **auditLog** and **routeEndpoint**. **The default** implementations prints the audit log to stdout.                                                                  |
+| eventHandler       | `Function`                | _provided_               |                | no                               | Handler for the emitted events, invoked with _named arguments_ **auditLog** and **routeEndpoint**. **The default** implementations prints the audit log to stdout.                                                                  |
 | getEntity          | `Function`                | _provided_               |                | no                               | Creates the entity name of the audit log. **The default** implementation `returns` the string after /api/ and before next / if any.                                                                                                 |
 
 ### Route options
