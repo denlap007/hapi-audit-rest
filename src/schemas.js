@@ -47,7 +47,7 @@ export default {
             .min(300000)
             .default(constants.FIFTEEN_MINS_MSECS),
         isAuditable: Validate.func().arity(2).default(isAuditable),
-        eventHanler: Validate.func().arity(1).default(eventHandler),
+        eventHandler: Validate.func().arity(1).default(eventHandler),
         getEntity: Validate.func().arity(1).default(getEntity),
     }),
     routeSchema: Validate.alternatives().try(
