@@ -215,11 +215,9 @@ exports.plugin = {
                         oldVals,
                         newVals,
                         diff: ({ diffOnly, skipDiff }) => {
-                            if (diffOnly) {
-                                Utils.keepProps(oldVals, newVals, diffOnly);
-                            } else {
-                                Utils.removeProps(oldVals, newVals, skipDiff);
-                            }
+                            Utils.keepProps(oldVals, newVals, diffOnly);
+                            Utils.removeProps(oldVals, newVals, skipDiff);
+
                             return settings.diffFunc(oldVals, newVals);
                         },
                     });

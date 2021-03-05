@@ -3,6 +3,8 @@ import stream from "stream";
 import AuditAction from "./dtos/AuditAction";
 import AuditMutation from "./dtos/AuditMutation";
 
+const isObject = (val) => typeof val === "object" && val !== null;
+
 export default {
     clone: (obj) => JSON.parse(JSON.stringify(obj)),
     isRead: (method) => method === "get",
@@ -48,32 +50,25 @@ export default {
     shouldAuditRequest: (method, auditGetRequests, injected) =>
         injected == null && ((method === "get" && auditGetRequests) || method !== "get"),
     removeProps: (left, right, props) => {
-        if (Array.isArray(props)) {
+        if (Array.isArray(props) && isObject(left) && isObject(right)) {
             props.forEach((key) => {
                 delete left[key];
                 delete right[key];
             });
-        } else if (props != null) {
-            throw new Error(
-                `Invalid type for option: [skipDiff]. Expected array got ${typeof props}`
-            );
         }
+
         return [left, right];
     },
     isStream: (input) => input instanceof stream.Readable,
     getUser: (req, usernameKey) => req.auth?.credentials?.[usernameKey] ?? null,
     keepProps: (left, right, props) => {
-        if (props != null && Array.isArray(props)) {
+        if (Array.isArray(props) && isObject(left) && isObject(right)) {
             [...new Set([Object.keys(left), Object.keys(right)].flat())].forEach((key) => {
                 if (!props.includes(key)) {
                     delete left[key];
                     delete right[key];
                 }
             });
-        } else {
-            throw new Error(
-                `Invalid type for option: [diffOnly]. Expected array got ${typeof props}`
-            );
         }
 
         return [left, right];
