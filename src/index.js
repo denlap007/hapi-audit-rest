@@ -29,7 +29,7 @@ exports.plugin = {
         hapi: ">=17.0.0",
     },
     name: internals.pluginName,
-    version: "2.0.0",
+    version: "2.0.1",
     async register(server, options) {
         const settings = Validate.attempt(
             options,
