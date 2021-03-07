@@ -1,387 +1,289 @@
-import {
-  clone,
-  isRead,
-  isCreate,
-  isUpdate,
-  isDelete,
-  isDisabled,
-  isLoggedIn,
-  getEntity,
-  toEndpoint,
-  isSuccess,
-  initMutation,
-  initAction,
-  getEntityId,
-  gotResponseData,
-  shouldAuditRequest,
-  removeProps,
-  isStream,
-  getUser,
-  keepProps,
-  checkOldVals,
-} from "./utils";
-import validateSchema from "./validations";
+import Validate from "@hapi/validate";
+
+import Utils from "./utils";
+import Schemas from "./schemas";
+
+const internals = {};
+
+internals.pluginName = "hapi-audit-rest";
+
+internals.schema = Schemas.baseSchema;
+
+internals.handleError = (settings, request, error) => {
+    if (settings.showErrorsOnStdErr) {
+        console.error(`[${internals.pluginName}] ERROR: ${error.message}`, error);
+    }
+    request.log(["error", internals.pluginName], error.message);
+};
+
+internals.fetchValues = async ({ server, headers, auth, url: { pathname } }, pathOverride) =>
+    server.inject({
+        method: "GET",
+        url: pathOverride || pathname,
+        headers: { ...headers, injected: "true" },
+        auth: auth.isAuthenticated ? auth : undefined,
+    });
 
 exports.plugin = {
-  requirements: {
-    hapi: ">=17.0.0",
-  },
-  name: "hapi-audit-rest",
-  version: "1.13.0",
-  async register(server, options) {
-    // validate options schema
-    validateSchema(options);
-
-    const FIFTEEN_MINS_MSECS = 900000;
-    const ID_PARAM_DEFAULT = "id";
-    const {
-      disableOnRoutes, // TODO
-      auditGetRequests = true,
-      showErrorsOnStdErr = true,
-      diffFunc = () => [{}, {}],
-      disableCache = false,
-      clientId = "client-app",
-      sidUsernameAttribute = "userName",
-      emitEventName = "auditing",
-      cacheExpiresIn = FIFTEEN_MINS_MSECS,
-      isAuditable = (path, method) => path.startsWith("/api"),
-      eventHanler = (data) => {
-        console.log("Emitted Audit Record", JSON.stringify(data, null, 4));
-      },
-    } = options;
-
-    // initialize caches
-    let oldValsCache = new Map();
-    const auditValues = new Map();
-
-    // register event
-    server.event(emitEventName);
-
-    // register event handler
-    server.events.on(emitEventName, eventHanler);
-
-    const handleError = (request, error) => {
-      if (showErrorsOnStdErr) {
-        console.error(`[${this.name}] =======> ERROR: ${error.message}`);
-      }
-      request.log(["error", "auditing-error"], error.message);
-    };
-
-    const emitAuditEvent = (rec, routeEndpoint) => {
-      if (rec != null) {
-        server.events.emit(emitEventName, rec);
-
-        // clear cached data, necessary only on put
-        auditValues.delete(routeEndpoint);
-      } else {
-        throw new Error(
-          `Cannot audit null audit record for endpoint: ${routeEndpoint}`
+    requirements: {
+        hapi: ">=17.0.0",
+    },
+    name: internals.pluginName,
+    version: "2.0.0",
+    async register(server, options) {
+        const settings = Validate.attempt(
+            options,
+            internals.schema,
+            `[${internals.pluginName}]: Invalid registration options!`
         );
-      }
-    };
+        // initialize cache
+        let oldValsCache = new Map();
 
-    const fetchValues = async (
-      { headers, auth, url: { pathname } },
-      customGetPath
-    ) =>
-      server.inject({
-        method: "GET",
-        url: customGetPath || pathname,
-        headers: { ...headers, injected: "true" },
-        auth,
-      });
+        // register event and handler
+        server.event(internals.pluginName);
+        server.events.on(internals.pluginName, settings.eventHandler);
 
-    // ------------------------------- PRE-HANDLER ------------------------- //
-    server.ext("onPreHandler", async (request, h) => {
-      try {
-        const { [this.name]: auditing = {} } = request.route.settings.plugins;
-        // route specific auditing options
-        const {
-          action,
-          entity,
-          entityKeys,
-          idParam = ID_PARAM_DEFAULT,
-          skipDiff,
-          auditAsUpdate,
-          diffOnly,
-          getPath,
-          mapParam,
-          forceGetAfterUpdate,
-          simpleAction,
-        } = auditing;
+        // plugin options route validation
+        server.ext("onPreStart", () => {
+            server
+                .table()
+                .filter((route) => internals.pluginName in route.settings.plugins)
+                .forEach((route) => {
+                    const rops = route.settings.plugins[internals.pluginName];
 
-        const username = getUser(request, sidUsernameAttribute);
-
-        const {
-          url: { pathname },
-          method,
-          params,
-          payload,
-        } = request;
-
-        /**
-         * skip audit if disabled on route, not within session scope, path does no match criteria
-         * if this will be handled as a custom action skip to process on preResponse
-         */
-        if (
-          isDisabled(auditing) ||
-          !isLoggedIn(username) ||
-          !isAuditable(pathname, method) ||
-          action ||
-          simpleAction
-        ) {
-          return h.continue;
-        }
-
-        /**
-         * Ovveride, creates GET endpoint using the value of the specified path param as an id
-         * and the specified path if provided or else the current
-         */
-        const customGetPath = (getPath || pathname).replace(
-          new RegExp(/{.*}/, "gi"),
-          params[mapParam]
-        );
-        const createMutation = initMutation({
-          method,
-          clientId,
-          username,
-          auditAsUpdate,
+                    Validate.attempt(
+                        rops,
+                        Schemas.routeSchema,
+                        `[${internals.pluginName}]: Invalid route options on ${route.path}`
+                    );
+                });
         });
-        const id = params[idParam];
-        const getEndpoint = toEndpoint("get", pathname, customGetPath);
-        const routeEndpoint = toEndpoint(method, pathname);
 
-        if (isUpdate(method) || auditAsUpdate || forceGetAfterUpdate) {
-          let oldVals = null;
-          let newVals = null;
-          let isProxy = false;
+        server.ext("onPreHandler", async (request, h) => {
+            try {
+                const {
+                    [internals.pluginName]: routeOptions = {},
+                } = request.route.settings.plugins;
+                const {
+                    url: { pathname },
+                    method,
+                    params,
+                    query,
+                } = request;
 
-          // check if proxied to upstream server
-          if (isStream(payload)) {
-            isProxy = true;
-          } else {
-            newVals = clone(payload);
-          }
+                /**
+                 * skip audit if disabled on route, not authenticated and auditAuthOnly enabled, path does not match criteria
+                 * if this will be handled as a custom action skip to process on preResponse
+                 */
+                if (
+                    Utils.isDisabled(routeOptions) ||
+                    (settings.auditAuthOnly && !Utils.hasAuth(request)) ||
+                    !settings.isAuditable(pathname, method) ||
+                    routeOptions.isAction
+                ) {
+                    return h.continue;
+                }
 
-          if (!disableCache) {
-            oldVals = oldValsCache.get(getEndpoint);
-          }
+                // Ovveride, creates GET endpoint
+                const pathOverride = Validate.attempt(
+                    routeOptions.getPath?.({ query, params }),
+                    Schemas.getRoutePath
+                );
+                const getEndpoint = Utils.toEndpoint("get", pathname, pathOverride);
+                const routeEndpoint = Utils.toEndpoint(method, pathname);
 
-          // if null or cache undefined
-          if (oldVals == null) {
-            const { payload: data } = await fetchValues(request, customGetPath);
-            oldVals = JSON.parse(data);
-          } else {
-            // evict key due to update
-            oldValsCache.delete(getEndpoint);
-          }
+                if (Utils.isUpdate(method) || routeOptions.auditAsUpdate) {
+                    let oldVals = settings.cacheEnabled ? oldValsCache.get(getEndpoint) : null;
 
-          checkOldVals(oldVals, routeEndpoint);
+                    if (oldVals == null) {
+                        const { payload: data } = await internals.fetchValues(
+                            request,
+                            pathOverride
+                        );
+                        oldVals = JSON.parse(data);
+                        oldValsCache.set(getEndpoint, oldVals);
+                    }
 
-          if (isProxy || auditAsUpdate || forceGetAfterUpdate) {
-            oldValsCache.set(getEndpoint, oldVals);
-            return h.continue;
-          }
-
-          if (diffOnly) {
-            keepProps(oldVals, newVals, diffOnly);
-          } else {
-            removeProps(oldVals, newVals, skipDiff);
-          }
-
-          const [originalValues, newValues] = diffFunc(oldVals, newVals);
-
-          const rec = createMutation({
-            entity: getEntity(entity, pathname),
-            entityId: getEntityId(entityKeys, id, newVals),
-            originalValues,
-            newValues,
-          });
-
-          // save to oldValsCache to emit on success
-          auditValues.set(routeEndpoint, rec);
-        } else if (isDelete(method)) {
-          const { payload: originalValues } = await fetchValues(request);
-
-          const rec = createMutation({
-            entity: getEntity(entity, pathname),
-            entityId: getEntityId(entityKeys, id, originalValues),
-            originalValues,
-          });
-
-          // save to oldValsCache to emit on success
-          auditValues.set(routeEndpoint, rec);
-        }
-      } catch (error) {
-        handleError(request, error);
-      }
-
-      return h.continue;
-    });
-
-    // ------------------------------- PRE-RESPONSE ------------------------- //
-    server.ext("onPreResponse", async (request, h) => {
-      try {
-        const { [this.name]: auditing = {} } = request.route.settings.plugins;
-        // route specific auditing options
-        const {
-          action,
-          eventType,
-          entity,
-          entityKeys,
-          idParam = ID_PARAM_DEFAULT,
-          skipDiff,
-          auditAsUpdate,
-          diffOnly,
-          getPath,
-          mapParam,
-          paramsAsData,
-          simpleAction,
-        } = auditing;
-
-        const username = getUser(request, sidUsernameAttribute);
-
-        const {
-          url: { pathname },
-          headers: { injected },
-          method,
-          query,
-          params,
-          payload: reqPayload,
-          response,
-        } = request;
-        const { source: resp, statusCode } = response;
-
-        // skip audit if disabled on route, not in session, path does not match criteria, call failed
-        if (
-          isDisabled(auditing) ||
-          !isLoggedIn(username) ||
-          !isAuditable(pathname, method) ||
-          !isSuccess(statusCode)
-        ) {
-          return h.continue;
-        }
-
-        const customGetPath = (getPath || pathname).replace(
-          new RegExp(/{.*}/, "gi"),
-          params[mapParam]
-        );
-        const createMutation = initMutation({
-          method,
-          clientId,
-          username,
-          auditAsUpdate,
-        });
-        const createAction = initAction({ clientId, username });
-        const routeEndpoint = toEndpoint(method, pathname);
-        const getEndpoint = toEndpoint("get", pathname, customGetPath);
-        let rec = null;
-
-        if (simpleAction) {
-          const id = params[idParam];
-
-          rec = createAction({
-            entity: getEntity(entity, pathname),
-            entityId: id,
-            action: simpleAction,
-            type: eventType,
-          });
-        } else if (
-          action &&
-          (isUpdate(method) || isCreate(method)) &&
-          !isStream(reqPayload)
-        ) {
-          /**
-           * Override default behaviour. For POST, PUT if user action is specified on route
-           * don't create a mutation but an action instead with the reqPayload data
-           * */
-
-          const id = params[idParam] || reqPayload[idParam];
-
-          rec = createAction({
-            entity: getEntity(entity, pathname),
-            entityId: getEntityId(entityKeys, id, reqPayload),
-            data: reqPayload,
-            action,
-            type: eventType,
-          });
-        } else if (isRead(method) && injected == null) {
-          const id = params[idParam];
-
-          if (id && !disableCache && !isStream(resp)) {
-            oldValsCache.set(getEndpoint, resp);
-          }
-
-          rec = createAction({
-            entity: getEntity(entity, pathname),
-            entityId: getEntityId(entityKeys, id, params),
-            action,
-            data: paramsAsData ? params : query,
-          });
-        } else if (isUpdate(method) || auditAsUpdate) {
-          const id = params[idParam];
-          const oldVals = oldValsCache.get(getEndpoint);
-          rec = auditValues.get(routeEndpoint);
-
-          // if a record was created audit it, else fetch new vals and create it
-          if (rec == null) {
-            checkOldVals(oldVals, routeEndpoint);
-
-            const { payload: data } = await fetchValues(request, customGetPath);
-            const newVals = JSON.parse(data);
-
-            if (diffOnly) {
-              keepProps(oldVals, newVals, diffOnly);
-            } else {
-              removeProps(oldVals, newVals, skipDiff);
+                    if (oldVals == null) {
+                        throw new Error(`Cannot get data before update on ${routeEndpoint}`);
+                    }
+                } else if (Utils.isDelete(method)) {
+                    const { payload } = await internals.fetchValues(request, pathOverride);
+                    const originalValues = JSON.parse(payload);
+                    oldValsCache.set(getEndpoint, originalValues);
+                }
+            } catch (error) {
+                internals.handleError(settings, request, error);
             }
 
-            const [originalValues, newValues] = diffFunc(oldVals, newVals);
+            return h.continue;
+        });
 
-            rec = createMutation({
-              entity: getEntity(entity, pathname),
-              entityId: getEntityId(entityKeys, id, newVals),
-              originalValues,
-              newValues,
-            });
+        server.ext("onPreResponse", async (request, h) => {
+            try {
+                const {
+                    [internals.pluginName]: routeOptions = {},
+                } = request.route.settings.plugins;
+                const username = Utils.getUser(request, settings.usernameKey);
+                const {
+                    url: { pathname },
+                    headers,
+                    method,
+                    query,
+                    params,
+                    payload: reqPayload,
+                    response: { source: resp, statusCode },
+                } = request;
+                const { injected } = headers;
 
-            oldValsCache.delete(getEndpoint);
-          }
-        } else if (isDelete(method)) {
-          rec = auditValues.get(routeEndpoint);
-        } else if (isCreate(method)) {
-          const id = gotResponseData(resp)
-            ? resp[idParam]
-            : reqPayload[idParam];
+                // skip audit if disabled on route, not authenticated and auditAuthOnly enabled, path does not match criteria, call failed
+                if (
+                    Utils.isDisabled(routeOptions) ||
+                    (settings.auditAuthOnly && !Utils.hasAuth(request)) ||
+                    !settings.isAuditable(pathname, method) ||
+                    !Utils.isSuccess(statusCode)
+                ) {
+                    return h.continue;
+                }
 
-          if (!isStream(resp)) {
-            const data = gotResponseData(resp) ? resp : reqPayload;
+                const pathOverride = Validate.attempt(
+                    routeOptions.getPath?.({ query, params }),
+                    Schemas.getRoutePath
+                );
+                const createMutation = Utils.initMutation({
+                    method,
+                    clientId: settings.clientId,
+                    username,
+                    auditAsUpdate: routeOptions.auditAsUpdate,
+                });
+                const createAction = Utils.initAction({
+                    clientId: settings.clientId,
+                    username,
+                });
+                const routeEndpoint = Utils.toEndpoint(method, pathname);
+                const getEndpoint = Utils.toEndpoint("get", pathname, pathOverride);
+                let auditLog = null;
 
-            rec = createMutation({
-              entity: getEntity(entity, pathname),
-              entityId: getEntityId(entityKeys, id, data),
-              newValues: data,
-            });
-          } else {
-            throw new Error(
-              `Cannot raed streamed response on ${routeEndpoint}`
-            );
-          }
-        }
+                if (Utils.isRead(method) && injected == null) {
+                    if (settings.cacheEnabled && !Utils.isStream(resp)) {
+                        oldValsCache.set(getEndpoint, resp);
+                    }
 
-        // skipp auditing of GET requests if enabled, of injected from plugin
-        if (shouldAuditRequest(method, auditGetRequests, injected)) {
-          emitAuditEvent(rec, routeEndpoint);
-        }
-      } catch (error) {
-        handleError(request, error);
-      }
+                    auditLog = routeOptions.ext?.({ headers, query, params });
+                    Validate.assert(auditLog, Schemas.actionSchema);
 
-      return h.continue;
-    });
+                    auditLog = createAction({
+                        entity: settings.getEntity(pathname),
+                        entityId: Utils.getId(params),
+                        data: query,
+                        ...auditLog,
+                    });
+                } else if (
+                    (Utils.isUpdate(method) || Utils.isCreate(method)) &&
+                    routeOptions.isAction
+                ) {
+                    if (Utils.isStream(reqPayload)) {
+                        throw new Error(`Cannot raed streamed payload on ${routeEndpoint}`);
+                    }
 
-    setInterval(() => {
-      oldValsCache = new Map();
-    }, cacheExpiresIn);
-  },
+                    auditLog = routeOptions.ext?.({ headers, query, params, payload: reqPayload });
+                    Validate.assert(auditLog, Schemas.actionSchema);
+
+                    auditLog = createAction({
+                        entity: settings.getEntity(pathname),
+                        entityId: Utils.getId(params, reqPayload),
+                        data: reqPayload,
+                        ...auditLog,
+                    });
+                } else if (Utils.isUpdate(method) || routeOptions.auditAsUpdate) {
+                    const oldVals = oldValsCache.get(getEndpoint);
+                    // check if proxied to upstream server
+                    let newVals = Utils.isStream(reqPayload) ? null : Utils.clone(reqPayload);
+
+                    if (newVals == null || routeOptions.fetchNewValues) {
+                        const { payload: data } = await internals.fetchValues(
+                            request,
+                            pathOverride
+                        );
+                        newVals = JSON.parse(data);
+                    }
+
+                    auditLog = routeOptions.ext?.({
+                        headers,
+                        query,
+                        params,
+                        oldVals,
+                        newVals,
+                        diff: ({ diffOnly, skipDiff }) => {
+                            Utils.keepProps(oldVals, newVals, diffOnly);
+                            Utils.removeProps(oldVals, newVals, skipDiff);
+
+                            return settings.diffFunc(oldVals, newVals);
+                        },
+                    });
+                    Validate.assert(auditLog, Schemas.mutationSchema);
+
+                    const [originalValues, newValues] = settings.diffFunc(oldVals, newVals);
+
+                    auditLog = createMutation({
+                        entity: settings.getEntity(pathname),
+                        entityId: Utils.getId(params, newVals),
+                        originalValues,
+                        newValues,
+                        ...auditLog,
+                    });
+
+                    oldValsCache.delete(getEndpoint);
+                } else if (Utils.isDelete(method)) {
+                    const oldVals = oldValsCache.get(getEndpoint);
+
+                    auditLog = routeOptions.ext?.({ headers, query, params, oldVals });
+                    Validate.assert(auditLog, Schemas.mutationSchema);
+
+                    auditLog = createMutation({
+                        entity: settings.getEntity(pathname),
+                        entityId: Utils.getId(params, oldVals),
+                        originalValues: oldVals,
+                        ...auditLog,
+                    });
+                } else if (Utils.isCreate(method)) {
+                    if (!Utils.isStream(resp)) {
+                        const data = Utils.gotResponseData(resp) ? resp : reqPayload;
+
+                        auditLog = routeOptions.ext?.({ headers, query, params, newVals: data });
+                        Validate.assert(auditLog, Schemas.mutationSchema);
+
+                        auditLog = createMutation({
+                            entity: settings.getEntity(pathname),
+                            entityId: Utils.getId(null, data),
+                            newValues: data,
+                            ...auditLog,
+                        });
+                    } else {
+                        throw new Error(`Cannot raed streamed response on ${routeEndpoint}`);
+                    }
+                }
+
+                // skipp auditing of GET requests if enabled, of injected from plugin
+                if (Utils.shouldAuditRequest(method, settings.auditGetRequests, injected)) {
+                    if (auditLog != null) {
+                        server.events.emit(internals.pluginName, {
+                            auditLog,
+                            endpoint: routeEndpoint,
+                        });
+                    } else {
+                        throw new Error(`Null auditLog record for endpoint: ${routeEndpoint}`);
+                    }
+                }
+            } catch (error) {
+                internals.handleError(settings, request, error);
+            }
+
+            return h.continue;
+        });
+
+        setInterval(() => {
+            oldValsCache = new Map();
+        }, settings.cacheExpiresIn);
+    },
 };

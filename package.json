@@ -1,13 +1,18 @@
 {
   "name": "hapi-audit-rest",
-  "version": "1.13.0",
+  "version": "2.0.0",
   "description": "A NPM package to audit rest API calls on a Hapi.js server",
   "main": "lib/index.js",
+  "engines": {
+    "node": ">=12.0.0"
+  },
   "scripts": {
     "build": "node_modules/.bin/babel ./src -d ./lib",
     "lint": "node_modules/.bin/eslint --ext .js ./src",
     "lint:fix": "node_modules/.bin/eslint --ext .js ./src --fix",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "pretest": "node_modules/.bin/babel ./src -d ./lib",
+    "test": "lab -v",
+    "test-cov-html": "lab -r html -o coverage.html",
     "prepublishOnly": "npm run build"
   },
   "husky": {
@@ -36,10 +41,16 @@
   },
   "homepage": "https://github.com/denlap007/hapi-audit-rest#readme",
   "devDependencies": {
-    "babel-cli": "^6.26.0",
+    "@babel/cli": "^7.12.10",
+    "@babel/core": "^7.12.10",
+    "@babel/preset-env": "^7.12.11",
+    "@hapi/code": "^8.0.2",
+    "@hapi/h2o2": "^9.0.2",
+    "@hapi/hapi": "^20.0.3",
+    "@hapi/lab": "^24.1.0",
+    "@hapi/wreck": "^17.1.0",
     "babel-eslint": "^10.1.0",
-    "babel-plugin-transform-object-rest-spread": "^6.26.0",
-    "babel-preset-env": "^1.7.0",
+    "corejs": "^1.0.0",
     "eslint": "^7.17.0",
     "eslint-config-airbnb-base": "^14.2.1",
     "eslint-config-prettier": "^7.1.0",
@@ -48,5 +59,8 @@
     "husky": "^4.3.7",
     "lint-staged": "^10.5.3",
     "prettier": "^2.2.1"
+  },
+  "dependencies": {
+    "@hapi/validate": "^1.1.3"
   }
 }
