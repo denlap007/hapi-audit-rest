@@ -1,6 +1,6 @@
 # hapi-audit-rest
 
-[![npm version](https://badge.fury.io/js/hapi-audit-rest.svg)](https://badge.fury.io/js/hapi-k8s-health)
+[![npm version](https://badge.fury.io/js/hapi-audit-rest.svg)](https://badge.fury.io/js/hapi-audit-rest)
 [![Build Status](https://travis-ci.com/denlap007/hapi-audit-rest.png?branch=master)](https://travis-ci.com/denlap007/hapi-audit-rest)
 [![Known Vulnerabilities](https://snyk.io/test/npm/hapi-audit-rest/badge.svg)](https://snyk.io/test/npm/hapi-audit-rest)
 
