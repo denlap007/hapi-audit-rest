@@ -165,16 +165,19 @@ exports.plugin = {
                 let auditLog = null;
 
                 if (Utils.isRead(method) && injected == null) {
-                    if (settings.cacheEnabled && !Utils.isStream(resp)) {
-                        oldValsCache.set(getEndpoint, resp);
-                    }
-
                     auditLog = routeOptions.ext?.({ headers, query, params });
                     Validate.assert(auditLog, Schemas.actionSchema);
 
+                    const entityId = auditLog?.entityId || Utils.getId(params);
+
+                    // cache only GET by id response
+                    if (settings.cacheEnabled && !Utils.isStream(resp) && !!entityId) {
+                        oldValsCache.set(getEndpoint, resp);
+                    }
+
                     auditLog = createAction({
                         entity: settings.getEntity(pathname),
-                        entityId: Utils.getId(params),
+                        entityId,
                         data: query,
                         ...auditLog,
                     });
