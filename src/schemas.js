@@ -8,10 +8,7 @@ const constants = {
 
 const isAuditable = () => (path, method) => path.startsWith("/api");
 const eventHandler = () => ({ auditLog, endpoint }) => {
-    console.log(
-        `===============> Audit Log Record for: ${endpoint}\n`,
-        JSON.stringify(auditLog, null, 4)
-    );
+    console.log(`Audit Log Record for: ${endpoint}\n`, JSON.stringify(auditLog, null, 4));
 };
 const diff = () => (left, right) => [left, right];
 
