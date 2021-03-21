@@ -40,8 +40,8 @@ export default {
             otherwise: Validate.any(),
         }),
         cacheExpiresIn: Validate.number()
+            .integer()
             .positive()
-            .min(300000)
             .default(constants.FIFTEEN_MINS_MSECS),
         isAuditable: Validate.func().arity(2).default(isAuditable),
         eventHandler: Validate.func().arity(1).default(eventHandler),
