@@ -37,7 +37,7 @@ exports.plugin = {
             `[${internals.pluginName}]: Invalid registration options!`
         );
         // initialize cache
-        let oldValsCache = new Map();
+        const oldValsCache = new Utils.ValuesCache();
 
         // register event and handler
         server.event(internals.pluginName);
@@ -286,7 +286,7 @@ exports.plugin = {
         });
 
         setInterval(() => {
-            oldValsCache = new Map();
+            oldValsCache.clear();
         }, settings.cacheExpiresIn);
     },
 };
