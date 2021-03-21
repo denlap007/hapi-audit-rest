@@ -79,4 +79,26 @@ export default {
 
         return data[DEFAULT_ID];
     },
+    ValuesCache: class MyMap extends Map {
+        set(...args) {
+            const now = Date.now();
+
+            super.set(...[`${now}::${args[0]}`, null]);
+            return super.set(...args);
+        }
+
+        clear() {
+            const now = Date.now();
+            const ONE_MINUTE_MSECS = 60 * 1000;
+
+            super.forEach((v, k) => {
+                const [insertTime, key] = k.split("::");
+
+                if (insertTime && now - insertTime > ONE_MINUTE_MSECS) {
+                    super.delete(k);
+                    super.delete(key);
+                }
+            });
+        }
+    },
 };
