@@ -49,10 +49,8 @@ exports.plugin = {
                 .table()
                 .filter((route) => internals.pluginName in route.settings.plugins)
                 .forEach((route) => {
-                    const rops = route.settings.plugins[internals.pluginName];
-
-                    Validate.attempt(
-                        rops,
+                    Validate.assert(
+                        route.settings.plugins[internals.pluginName],
                         Schemas.routeSchema,
                         `[${internals.pluginName}]: Invalid route options on ${route.path}`
                     );

@@ -2,6 +2,7 @@ import Validate from "@hapi/validate";
 
 const constants = {
     FIFTEEN_MINS_MSECS: 900000,
+    ONE_MIN_MSECS: 60000,
     DERAULT_CLIENT_ID: "my-app",
     DEFAULT_SOURCE_ID: "id",
 };
@@ -42,6 +43,7 @@ export default {
         cacheExpiresIn: Validate.number()
             .integer()
             .positive()
+            .min(constants.ONE_MIN_MSECS)
             .default(constants.FIFTEEN_MINS_MSECS),
         isAuditable: Validate.func().arity(2).default(isAuditable),
         eventHandler: Validate.func().arity(1).default(eventHandler),
@@ -63,7 +65,6 @@ export default {
     ),
     mutationSchema: Validate.alternatives(
         Validate.object({
-            type: Validate.string(),
             entity: Validate.string(),
             entityId: Validate.alternatives(
                 Validate.number(),
@@ -79,7 +80,10 @@ export default {
         Validate.object({
             type: Validate.string(),
             entity: Validate.string(),
-            entityId: Validate.string().allow("").allow(null),
+            entityId: Validate.alternatives(
+                Validate.number(),
+                Validate.string().allow("").allow(null)
+            ),
             action: Validate.string(),
             data: Validate.object().allow(null),
         }),
