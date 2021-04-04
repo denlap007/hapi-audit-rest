@@ -336,4 +336,34 @@ describe("Route settings", () => {
             outcome: "Success",
         });
     });
+
+    it("does not emit an audit record when disabled on route", async () => {
+        await server.register({
+            plugin,
+        });
+
+        server.events.on("hapi-audit-rest", ({ auditLog }) => {
+            auditEvent = auditLog;
+        });
+
+        server.route({
+            method: "GET",
+            path: "/api/test",
+            handler: (request, h) => "OK",
+            options: {
+                plugins: {
+                    "hapi-audit-rest": false,
+                },
+            },
+        });
+
+        const res = await server.inject({
+            method: "get",
+            url: "/api/test",
+        });
+
+        expect(res.statusCode).to.equal(200);
+        expect(auditError).to.be.null();
+        expect(auditEvent).to.be.null();
+    });
 });
