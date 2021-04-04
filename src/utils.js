@@ -16,16 +16,14 @@ export default {
     toEndpoint: (method, path, getPath) => (getPath ? `${method}:${getPath}` : `${method}:${path}`),
     isSuccess: (code) =>
         Number.isInteger(code) && parseInt(code, 10) >= 200 && parseInt(code, 10) <= 299,
-    initMutation: ({ method: httpVerb, clientId, username, auditAsUpdate }) => ({
+    initMutation: ({ method, clientId, username }) => ({
         entity,
         entityId,
         action,
         originalValues,
         newValues,
-    }) => {
-        const method = auditAsUpdate ? "PUT" : httpVerb;
-
-        return new AuditMutation({
+    }) =>
+        new AuditMutation({
             method,
             application: clientId,
             entity,
@@ -34,8 +32,7 @@ export default {
             username,
             originalValues,
             newValues,
-        });
-    },
+        }),
     initAction: ({ clientId, username }) => ({ entity, entityId, data, action, type }) =>
         new AuditAction({
             application: clientId,

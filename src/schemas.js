@@ -54,11 +54,6 @@ export default {
             ext: Validate.func(),
             isAction: Validate.boolean().default(false),
             getPath: Validate.func(),
-            auditAsUpdate: Validate.boolean().when("isAction", {
-                is: true,
-                then: false,
-                otherwise: Validate.boolean().default(false),
-            }),
             fetchNewValues: Validate.boolean().default(false),
         }),
         Validate.boolean()

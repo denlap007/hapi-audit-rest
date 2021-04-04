@@ -29,7 +29,7 @@ exports.plugin = {
         hapi: ">=17.0.0",
     },
     name: internals.pluginName,
-    version: "2.2.0",
+    version: "3.0.0",
     async register(server, options) {
         const settings = Validate.attempt(
             options,
@@ -90,7 +90,7 @@ exports.plugin = {
                 const getEndpoint = Utils.toEndpoint("get", pathname, pathOverride);
                 const routeEndpoint = Utils.toEndpoint(method, pathname);
 
-                if (Utils.isUpdate(method) || routeOptions.auditAsUpdate) {
+                if (Utils.isUpdate(method)) {
                     let oldVals = settings.cacheEnabled ? oldValsCache.get(getEndpoint) : null;
 
                     if (oldVals == null) {
@@ -152,7 +152,6 @@ exports.plugin = {
                     method,
                     clientId: settings.clientId,
                     username,
-                    auditAsUpdate: routeOptions.auditAsUpdate,
                 });
                 const createAction = Utils.initAction({
                     clientId: settings.clientId,
@@ -163,7 +162,7 @@ exports.plugin = {
                 let auditLog = null;
 
                 if (Utils.isRead(method) && injected == null) {
-                    auditLog = routeOptions.ext?.({ headers, query, params });
+                    auditLog = await routeOptions.ext?.(request);
                     Validate.assert(auditLog, Schemas.actionSchema);
 
                     const entityId = auditLog?.entityId || Utils.getId(params);
@@ -183,20 +182,22 @@ exports.plugin = {
                     (Utils.isUpdate(method) || Utils.isCreate(method)) &&
                     routeOptions.isAction
                 ) {
-                    if (Utils.isStream(reqPayload)) {
+                    auditLog = await routeOptions.ext?.(request);
+                    Validate.assert(auditLog, Schemas.actionSchema);
+
+                    if (Utils.isStream(reqPayload) && auditLog == null) {
                         throw new Error(`Cannot raed streamed payload on ${routeEndpoint}`);
                     }
 
-                    auditLog = routeOptions.ext?.({ headers, query, params, payload: reqPayload });
-                    Validate.assert(auditLog, Schemas.actionSchema);
-
                     auditLog = createAction({
                         entity: settings.getEntity(pathname),
-                        entityId: Utils.getId(params, reqPayload),
-                        data: reqPayload,
+                        entityId: Utils.isStream(reqPayload)
+                            ? Utils.getId(params)
+                            : Utils.getId(params, reqPayload),
+                        data: Utils.isStream(reqPayload) ? null : reqPayload,
                         ...auditLog,
                     });
-                } else if (Utils.isUpdate(method) || routeOptions.auditAsUpdate) {
+                } else if (Utils.isUpdate(method)) {
                     const oldVals = oldValsCache.get(getEndpoint);
                     // check if proxied to upstream server
                     let newVals = Utils.isStream(reqPayload) ? null : Utils.clone(reqPayload);
@@ -209,10 +210,7 @@ exports.plugin = {
                         newVals = JSON.parse(data);
                     }
 
-                    auditLog = routeOptions.ext?.({
-                        headers,
-                        query,
-                        params,
+                    auditLog = await routeOptions.ext?.(request, {
                         oldVals,
                         newVals,
                         diff: ({ diffOnly, skipDiff }) => {
@@ -238,7 +236,7 @@ exports.plugin = {
                 } else if (Utils.isDelete(method)) {
                     const oldVals = oldValsCache.get(getEndpoint);
 
-                    auditLog = routeOptions.ext?.({ headers, query, params, oldVals });
+                    auditLog = await routeOptions.ext?.(request, { oldVals });
                     Validate.assert(auditLog, Schemas.mutationSchema);
 
                     auditLog = createMutation({
@@ -251,7 +249,7 @@ exports.plugin = {
                     if (!Utils.isStream(resp)) {
                         const data = Utils.gotResponseData(resp) ? resp : reqPayload;
 
-                        auditLog = routeOptions.ext?.({ headers, query, params, newVals: data });
+                        auditLog = await routeOptions.ext?.(request, { newVals: data });
                         Validate.assert(auditLog, Schemas.mutationSchema);
 
                         auditLog = createMutation({
