@@ -29,7 +29,7 @@ exports.plugin = {
         hapi: ">=17.0.0",
     },
     name: internals.pluginName,
-    version: "3.0.0",
+    version: "3.0.1",
     async register(server, options) {
         const settings = Validate.attempt(
             options,
@@ -84,7 +84,7 @@ exports.plugin = {
 
                 // Ovveride, creates GET endpoint
                 const pathOverride = Validate.attempt(
-                    routeOptions.getPath?.({ query, params }),
+                    routeOptions.getPath?.(request),
                     Schemas.getRoutePath
                 );
                 const getEndpoint = Utils.toEndpoint("get", pathname, pathOverride);
@@ -145,7 +145,7 @@ exports.plugin = {
                 }
 
                 const pathOverride = Validate.attempt(
-                    routeOptions.getPath?.({ query, params }),
+                    routeOptions.getPath?.(request),
                     Schemas.getRoutePath
                 );
                 const createMutation = Utils.initMutation({
