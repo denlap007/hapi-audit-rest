@@ -36,7 +36,7 @@ Small opinionated [Hapi.js] plugin that generates **audit logs** for **RESTful A
 
 ## Requirements
 
-Works with Hapi **v17** or higher, Node.js **v12** or higher
+Works with Hapi **v18** or higher, Node.js **v12** or higher
 
 ## Installation
 
