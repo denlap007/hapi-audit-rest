@@ -224,7 +224,7 @@ await server.register({
 | isAuditable        | `Function`                | _provided_      | no                                                                                 | Checks if current path is auditable. **The default** implementation checks if **path starts with /api**.<br><br>_Signature<br> `function (path, method) {return Boolean}`_                                                                                                                             |
 | `eventHandler`     | `Function`                | _provided_      | no                                                                                 | Handler for the emitted events. **The default** implementations prints the audit log to stdout. You will have to implement this function in order to do something with the audit log.<br><br>_Signature<br> `function ({ auditLog, routeEndpoint })`_                                                  |
 | getEntity          | `Function`                | _provided_      | no                                                                                 | Creates the entity name of the audit log. **The default** implementation `returns` the string after /api/ and before next / if any.<br><br>_Signature<br> `function (path) {return String}`_                                                                                                           |
-| isEnabled | `Boolean`  | true   | no        | Enable/Disable plugin initializatino and functionality. |
+| isEnabled | `Boolean`  | true   | no        | Enable/Disable plugin initialization and functionality. |
 
 ### Plugin route options
 

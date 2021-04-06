@@ -11,13 +11,14 @@ internals.schema = Schemas.baseSchema;
 
 internals.handleError = (settings, request, error) => {
     if (settings.showErrorsOnStdErr) {
-        console.error(`[${internals.pluginName}] ERROR: ${error.message}`, error);
+        console.error(`[${internals.pluginName}]`, error);
     }
     request.log(["error", internals.pluginName], error.message);
 };
 
 internals.fetchValues = async ({ server, headers, auth, url: { pathname } }, pathOverride) =>
     server.inject({
+        validate: true,
         method: "GET",
         url: pathOverride || pathname,
         headers: { ...headers, injected: "true" },
@@ -29,7 +30,7 @@ exports.plugin = {
         hapi: ">=18.0.0",
     },
     name: internals.pluginName,
-    version: "3.2.1",
+    version: "3.3.0",
     async register(server, options) {
         const settings = Validate.attempt(
             options,
@@ -95,16 +96,19 @@ exports.plugin = {
                     let oldVals = settings.cacheEnabled ? oldValsCache.get(getEndpoint) : null;
 
                     if (oldVals == null) {
-                        const { payload: data } = await internals.fetchValues(
+                        const { payload: data, statusCode } = await internals.fetchValues(
                             request,
                             pathOverride
                         );
-                        oldVals = JSON.parse(data);
-                        oldValsCache.set(getEndpoint, oldVals);
-                    }
 
-                    if (oldVals == null) {
-                        throw new Error(`Cannot get data before update on ${routeEndpoint}`);
+                        if (Utils.isSuccess(statusCode)) {
+                            oldVals = JSON.parse(data);
+                            oldValsCache.set(getEndpoint, oldVals);
+                        } else {
+                            throw new Error(
+                                `Cannot get data before update on ${routeEndpoint}: ${data}`
+                            );
+                        }
                     }
                 } else if (Utils.isDelete(method)) {
                     const { payload } = await internals.fetchValues(request, pathOverride);
@@ -264,7 +268,7 @@ exports.plugin = {
                     }
                 }
 
-                // skipp auditing of GET requests if enabled, of injected from plugin
+                // skip auditing of GET requests if enabled, of injected from plugin
                 if (Utils.shouldAuditRequest(method, settings.auditGetRequests, injected)) {
                     if (auditLog != null) {
                         server.events.emit(internals.pluginName, {
