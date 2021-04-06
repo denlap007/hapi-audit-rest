@@ -48,6 +48,7 @@ export default {
         isAuditable: Validate.func().arity(2).default(isAuditable),
         eventHandler: Validate.func().arity(1).default(eventHandler),
         getEntity: Validate.func().arity(1).default(getEntity),
+        isEnabled: Validate.boolean().default(true),
     }),
     routeSchema: Validate.alternatives().try(
         Validate.object({

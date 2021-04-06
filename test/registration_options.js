@@ -296,4 +296,38 @@ describe("Registration settings", () => {
             outcome: "Success",
         });
     });
+
+    it("does not initialize plugin when disabled", async () => {
+        let error = null;
+
+        await server.register({
+            plugin,
+            options: {
+                isEnabled: false,
+            },
+        });
+
+        try {
+            server.events.on("hapi-audit-rest", ({ auditLog }) => {
+                auditEvent = auditLog;
+            });
+        } catch (e) {
+            error = e.message;
+        }
+
+        server.route({
+            method: "GET",
+            path: "/api/test",
+            handler: (request, h) => "OK",
+        });
+
+        const res = await server.inject({
+            method: "get",
+            url: "/api/test",
+        });
+
+        expect(res.statusCode).to.equal(200);
+        expect(error).to.be.equal("Unknown event hapi-audit-rest");
+        expect(auditEvent).to.be.null();
+    });
 });
