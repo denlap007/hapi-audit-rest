@@ -26,10 +26,10 @@ internals.fetchValues = async ({ server, headers, auth, url: { pathname } }, pat
 
 exports.plugin = {
     requirements: {
-        hapi: ">=17.0.0",
+        hapi: ">=18.0.0",
     },
     name: internals.pluginName,
-    version: "3.0.1",
+    version: "3.1.0",
     async register(server, options) {
         const settings = Validate.attempt(
             options,
