@@ -29,13 +29,16 @@ exports.plugin = {
         hapi: ">=18.0.0",
     },
     name: internals.pluginName,
-    version: "3.1.0",
+    version: "3.2.0",
     async register(server, options) {
         const settings = Validate.attempt(
             options,
             internals.schema,
             `[${internals.pluginName}]: Invalid registration options!`
         );
+
+        if (!settings.isEnabled) return;
+
         // initialize cache
         const oldValsCache = new Utils.ValuesCache();
 
@@ -65,8 +68,6 @@ exports.plugin = {
                 const {
                     url: { pathname },
                     method,
-                    params,
-                    query,
                 } = request;
 
                 /**
@@ -74,8 +75,8 @@ exports.plugin = {
                  * if this will be handled as a custom action skip to process on preResponse
                  */
                 if (
-                    Utils.isDisabled(routeOptions) ||
-                    (settings.auditAuthOnly && !Utils.hasAuth(request)) ||
+                    !Utils.isEnabled(routeOptions) ||
+                    (settings.auditAuthOnly && !request.auth.isAuthenticated) ||
                     !settings.isAuditable(pathname, method) ||
                     routeOptions.isAction
                 ) {
@@ -136,8 +137,8 @@ exports.plugin = {
 
                 // skip audit if disabled on route, not authenticated and auditAuthOnly enabled, path does not match criteria, call failed
                 if (
-                    Utils.isDisabled(routeOptions) ||
-                    (settings.auditAuthOnly && !Utils.hasAuth(request)) ||
+                    !Utils.isEnabled(routeOptions) ||
+                    (settings.auditAuthOnly && !request.auth.isAuthenticated) ||
                     !settings.isAuditable(pathname, method) ||
                     !Utils.isSuccess(statusCode)
                 ) {

@@ -11,8 +11,7 @@ export default {
     isCreate: (method) => method === "post",
     isUpdate: (method) => method === "put",
     isDelete: (method) => method === "delete",
-    isDisabled: (auditing) => auditing === false,
-    hasAuth: (req) => req.auth.isAuthenticated,
+    isEnabled: (auditing) => auditing !== false,
     toEndpoint: (method, path, getPath) => (getPath ? `${method}:${getPath}` : `${method}:${path}`),
     isSuccess: (code) =>
         Number.isInteger(code) && parseInt(code, 10) >= 200 && parseInt(code, 10) <= 299,
