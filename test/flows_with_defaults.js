@@ -42,6 +42,8 @@ describe("flows with default settings", () => {
                 plugin,
                 options: {
                     usernameKey: "userName",
+                    eventHandler: ({ auditLog, endpoint }) => {},
+                    showErrorsOnStdErr: false,
                 },
             },
         ]);
@@ -333,6 +335,41 @@ describe("flows with default settings", () => {
                 username: "user",
                 originalValues: oldValues,
                 newValues: null,
+                timestamp: auditEvent.body.timestamp,
+            },
+            outcome: "Success",
+        });
+    });
+
+    it("throws when old values cannot be retrieved and emits and audit log with new values only", async () => {
+        server.route({
+            method: "PUT",
+            path: "/api/test/{id}",
+            handler: (request, h) => "OK",
+        });
+
+        const res = await server.inject({
+            method: "put",
+            url: "/api/test/5",
+            payload: { data: "new vals" },
+        });
+
+        expect(res.statusCode).to.equal(200);
+        expect(auditError.data).to.equal(
+            'Cannot get data before update on put:/api/test/5: {"statusCode":404,"error":"Not Found","message":"Not Found"}'
+        );
+        expect(auditEvent).to.equal({
+            application: "my-app",
+            type: "MUTATION",
+            body: {
+                entity: "test",
+                entityId: "5",
+                action: "UPDATE",
+                username: "user",
+                originalValues: null,
+                newValues: {
+                    data: "new vals",
+                },
                 timestamp: auditEvent.body.timestamp,
             },
             outcome: "Success",
