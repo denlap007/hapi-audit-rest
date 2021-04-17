@@ -17,11 +17,6 @@
     "prepublishOnly": "npm run build",
     "prepare": "husky install"
   },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
-    }
-  },
   "lint-staged": {
     "src/**/*.{js}": [
       "node_modules/.bin/eslint --fix"
