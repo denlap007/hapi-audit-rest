@@ -1,3 +1,7 @@
 language: node_js
 node_js:
     - 12
+before_install:
+    - npm install coveralls --save-dev
+script:
+    - npm run test:coveralls

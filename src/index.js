@@ -16,14 +16,27 @@ internals.handleError = (settings, request, error) => {
     request.log(["error", internals.pluginName], error.message);
 };
 
-internals.fetchValues = async ({ server, headers, auth, url: { pathname } }, pathOverride) =>
-    server.inject({
+internals.fetchValues = async (
+    { server, headers, auth, url: { pathname }, method },
+    pathOverride
+) => {
+    const { payload, statusCode } = await server.inject({
         validate: true,
         method: "GET",
         url: pathOverride || pathname,
         headers: { ...headers, injected: "true" },
         auth: auth.isAuthenticated ? auth : undefined,
     });
+
+    if (Utils.isSuccess(statusCode)) {
+        return JSON.parse(payload);
+    }
+
+    const routeEndpoint = Utils.toEndpoint(method, pathname);
+    throw new Error(
+        `Could not fetch values for injected request get:${pathname} before ${routeEndpoint}: ${payload}`
+    );
+};
 
 exports.plugin = {
     requirements: {
@@ -90,30 +103,17 @@ exports.plugin = {
                     Schemas.getRoutePath
                 );
                 const getEndpoint = Utils.toEndpoint("get", pathname, pathOverride);
-                const routeEndpoint = Utils.toEndpoint(method, pathname);
 
                 if (Utils.isUpdate(method)) {
                     let oldVals = settings.cacheEnabled ? oldValsCache.get(getEndpoint) : null;
 
                     if (oldVals == null) {
-                        const { payload: data, statusCode } = await internals.fetchValues(
-                            request,
-                            pathOverride
-                        );
-
-                        if (Utils.isSuccess(statusCode)) {
-                            oldVals = JSON.parse(data);
-                            oldValsCache.set(getEndpoint, oldVals);
-                        } else {
-                            throw new Error(
-                                `Cannot get data before update on ${routeEndpoint}: ${data}`
-                            );
-                        }
+                        oldVals = await internals.fetchValues(request, pathOverride);
+                        oldValsCache.set(getEndpoint, oldVals);
                     }
                 } else if (Utils.isDelete(method)) {
-                    const { payload } = await internals.fetchValues(request, pathOverride);
-                    const originalValues = JSON.parse(payload);
-                    oldValsCache.set(getEndpoint, originalValues);
+                    const oldVals = await internals.fetchValues(request, pathOverride);
+                    oldValsCache.set(getEndpoint, oldVals);
                 }
             } catch (error) {
                 internals.handleError(settings, request, error);
@@ -208,11 +208,7 @@ exports.plugin = {
                     let newVals = Utils.isStream(reqPayload) ? null : Utils.clone(reqPayload);
 
                     if (newVals == null || routeOptions.fetchNewValues) {
-                        const { payload: data } = await internals.fetchValues(
-                            request,
-                            pathOverride
-                        );
-                        newVals = JSON.parse(data);
+                        newVals = await internals.fetchValues(request, pathOverride);
                     }
 
                     auditLog = await routeOptions.ext?.(request, {

@@ -341,7 +341,7 @@ describe("flows with default settings", () => {
         });
     });
 
-    it("throws when old values cannot be retrieved and emits and audit log with new values only", async () => {
+    it("throws when old values cannot be retrieved on PUT and emits and audit log with new values only", async () => {
         server.route({
             method: "PUT",
             path: "/api/test/{id}",
@@ -356,7 +356,7 @@ describe("flows with default settings", () => {
 
         expect(res.statusCode).to.equal(200);
         expect(auditError.data).to.equal(
-            'Cannot get data before update on put:/api/test/5: {"statusCode":404,"error":"Not Found","message":"Not Found"}'
+            'Could not fetch values for injected request get:/api/test/5 before put:/api/test/5: {"statusCode":404,"error":"Not Found","message":"Not Found"}'
         );
         expect(auditEvent).to.equal({
             application: "my-app",
@@ -370,6 +370,38 @@ describe("flows with default settings", () => {
                 newValues: {
                     data: "new vals",
                 },
+                timestamp: auditEvent.body.timestamp,
+            },
+            outcome: "Success",
+        });
+    });
+
+    it("throws when old values cannot be retrieved on DELETE and emits and audit log without original values", async () => {
+        server.route({
+            method: "delete",
+            path: "/api/test/{id}",
+            handler: (request, h) => "OK",
+        });
+
+        const res = await server.inject({
+            method: "delete",
+            url: "/api/test/5",
+        });
+
+        expect(res.statusCode).to.equal(200);
+        expect(auditError.data).to.equal(
+            'Could not fetch values for injected request get:/api/test/5 before delete:/api/test/5: {"statusCode":404,"error":"Not Found","message":"Not Found"}'
+        );
+        expect(auditEvent).to.equal({
+            application: "my-app",
+            type: "MUTATION",
+            body: {
+                entity: "test",
+                entityId: "5",
+                action: "DELETE",
+                username: "user",
+                originalValues: null,
+                newValues: null,
                 timestamp: auditEvent.body.timestamp,
             },
             outcome: "Success",

@@ -12,7 +12,8 @@
     "lint:fix": "node_modules/.bin/eslint --ext .js ./src --fix",
     "pretest": "node_modules/.bin/babel ./src -d ./lib",
     "test": "lab -v",
-    "test-cov-html": "lab -r html -o coverage.html",
+    "test:cov-html": "lab -r html -o coverage.html",
+    "test:coveralls": "lab -r lcov | ./node_modules/.bin/coveralls",
     "prepublishOnly": "npm run build"
   },
   "husky": {
