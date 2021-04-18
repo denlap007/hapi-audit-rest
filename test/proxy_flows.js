@@ -210,12 +210,13 @@ describe("PROXY flows with default settings", () => {
         server.route({
             method: "POST",
             path: "/api/test",
-            handler: (request, h) =>
-                h.proxy({
+            handler: {
+                proxy: {
                     host: "localhost",
                     port: upstream.info.port,
-                }),
-            options: { payload: { parse: false } },
+                    protocol: "http",
+                },
+            },
         });
 
         const res = await server.inject({
@@ -497,6 +498,52 @@ describe("PROXY flows with default settings", () => {
             },
             outcome: "Success",
         });
+
+        await upstream.stop();
+    });
+
+    it("throws on POST when isAction enabled on route while request payload is streamed and cannot be accessed", async () => {
+        const reqPayload = { a: "a", b: "b", c: "c" };
+        const resPayload = { id: 1, a: "a", b: "b", c: "c" };
+
+        upstream.route({
+            method: "POST",
+            path: "/api/test",
+            handler: (request, h) => resPayload,
+        });
+
+        await upstream.start();
+
+        server.route({
+            method: "POST",
+            path: "/api/test",
+            handler: {
+                proxy: {
+                    host: "localhost",
+                    port: upstream.info.port,
+                    protocol: "http",
+                },
+            },
+            options: {
+                plugins: {
+                    "hapi-audit-rest": {
+                        isAction: true,
+                    },
+                },
+            },
+        });
+
+        const res = await server.inject({
+            method: "POST",
+            payload: reqPayload,
+            url: "/api/test",
+        });
+
+        expect(res.statusCode).to.equal(200);
+
+        expect(auditError.data).to.equal("Cannot raed streamed payload on post:/api/test");
+
+        expect(auditEvent).to.be.null();
 
         await upstream.stop();
     });

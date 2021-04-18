@@ -407,4 +407,150 @@ describe("flows with default settings", () => {
             outcome: "Success",
         });
     });
+
+    it("throws on unsupported flows", async () => {
+        server.route({
+            method: "patch",
+            path: "/api/test/5",
+            handler: (request, h) => "OK",
+        });
+
+        const res = await server.inject({
+            method: "patch",
+            url: "/api/test/5",
+            payload: { data: "test" },
+        });
+
+        expect(res.statusCode).to.equal(200);
+
+        expect(auditError.data).to.equal("Null auditLog record for endpoint: patch:/api/test/5");
+
+        expect(auditEvent).to.be.null();
+    });
+
+    it("emits a mutation audit record (PUT - UPDATE) using route extention point to diff values using diffOnly", async () => {
+        const reqPayload = { a: "a", b: "bb", c: "cc" };
+        const oldValues = { id: 1, a: "a", b: "b", c: "c" };
+
+        server.route({
+            method: "GET",
+            path: "/api/test/{id}",
+            handler: (request, h) => oldValues,
+        });
+
+        server.route({
+            method: "PUT",
+            path: "/api/test/{id}",
+            handler: (request, h) => "OK",
+            options: {
+                plugins: {
+                    "hapi-audit-rest": {
+                        ext: async (req, { oldVals, newVals, diff }) => {
+                            const diffOnly = ["b"];
+                            const [originalValues, newValues] = diff({ diffOnly });
+
+                            return {
+                                originalValues,
+                                newValues,
+                            };
+                        },
+                    },
+                },
+            },
+        });
+
+        // used to enable caching of oldValues
+        await server.inject({
+            method: "get",
+            url: "/api/test/5",
+        });
+
+        const res = await server.inject({
+            method: "PUT",
+            payload: reqPayload,
+            url: "/api/test/5",
+        });
+
+        expect(res.statusCode).to.equal(200);
+
+        expect(auditError).to.be.null();
+
+        expect(auditEvent).to.equal({
+            application: "my-app",
+            type: "MUTATION",
+            body: {
+                entity: "test",
+                entityId: "5",
+                action: "UPDATE",
+                username: "user",
+                originalValues: { b: "b" },
+                newValues: { b: "bb" },
+                timestamp: auditEvent.body.timestamp,
+            },
+            outcome: "Success",
+        });
+    });
+
+    it("emits a mutation audit record (PUT - UPDATE) using route extention point to diff values with skipDiff", async () => {
+        const reqPayload = { a: "aa", b: "bb", c: "cc" };
+        const oldValues = { id: 1, a: "a", b: "b", c: "c" };
+
+        server.route({
+            method: "GET",
+            path: "/api/test/{id}",
+            handler: (request, h) => oldValues,
+        });
+
+        server.route({
+            method: "PUT",
+            path: "/api/test/{id}",
+            handler: (request, h) => "OK",
+            options: {
+                plugins: {
+                    "hapi-audit-rest": {
+                        ext: async (req, { oldVals, newVals, diff }) => {
+                            const skipDiff = ["id", "a"];
+                            const [originalValues, newValues] = diff({ skipDiff });
+
+                            return {
+                                originalValues,
+                                newValues,
+                            };
+                        },
+                    },
+                },
+            },
+        });
+
+        // used to enable caching of oldValues
+        await server.inject({
+            method: "get",
+            url: "/api/test/5",
+        });
+
+        const res = await server.inject({
+            method: "PUT",
+            payload: reqPayload,
+            url: "/api/test/5",
+        });
+
+        expect(res.statusCode).to.equal(200);
+
+        expect(auditError).to.be.null();
+
+        expect(auditEvent).to.equal({
+            application: "my-app",
+            type: "MUTATION",
+            body: {
+                entity: "test",
+                entityId: "5",
+                action: "UPDATE",
+                username: "user",
+                originalValues: { b: "b", c: "c" },
+                newValues: { b: "bb", c: "cc" },
+                timestamp: auditEvent.body.timestamp,
+            },
+            outcome: "Success",
+        });
+    });
 });
