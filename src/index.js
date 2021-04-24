@@ -2,6 +2,7 @@ import Validate from "@hapi/validate";
 
 import Utils from "./utils";
 import Schemas from "./schemas";
+import Pkg from "../package.json";
 
 const internals = {};
 
@@ -39,11 +40,10 @@ internals.fetchValues = async (
 };
 
 exports.plugin = {
+    pkg: Pkg,
     requirements: {
         hapi: ">=18.0.0",
     },
-    name: internals.pluginName,
-    version: "3.4.0",
     async register(server, options) {
         const settings = Validate.attempt(
             options,
@@ -282,8 +282,12 @@ exports.plugin = {
             return h.continue;
         });
 
-        setInterval(() => {
+        const cacheEvictionInterval = setInterval(() => {
             oldValsCache.clear();
         }, settings.cacheExpiresIn);
+
+        server.ext("onPreStop", () => {
+            clearInterval(cacheEvictionInterval);
+        });
     },
 };

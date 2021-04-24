@@ -21,10 +21,10 @@ describe("Route settings", () => {
         });
     });
 
-    afterEach(() => {
+    afterEach(async () => {
         auditError = null;
         auditEvent = null;
-        server = null;
+        await server.stop();
     });
 
     it("overrides audit action document values when ext function is provided", async () => {

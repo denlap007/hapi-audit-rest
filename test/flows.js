@@ -59,10 +59,10 @@ describe("flows with default settings", () => {
         });
     });
 
-    afterEach(() => {
+    afterEach(async () => {
         auditError = null;
         auditEvent = null;
-        server = null;
+        await server.stop();
     });
 
     it("emits an action audit record", async () => {

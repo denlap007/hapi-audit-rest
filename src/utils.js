@@ -4,6 +4,7 @@ import AuditAction from "./dtos/AuditAction";
 import AuditMutation from "./dtos/AuditMutation";
 
 const isObject = (val) => typeof val === "object" && val !== null;
+const ONE_MINUTE_MSECS = 60 * 1000;
 
 export default {
     clone: (obj) => JSON.parse(JSON.stringify(obj)),
@@ -85,7 +86,6 @@ export default {
 
         clear() {
             const now = Date.now();
-            const ONE_MINUTE_MSECS = 60 * 1000;
 
             super.forEach((v, k) => {
                 const [insertTime, key] = k.split("::");
