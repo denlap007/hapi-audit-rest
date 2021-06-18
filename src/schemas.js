@@ -49,6 +49,7 @@ export default {
         eventHandler: Validate.func().arity(1).default(eventHandler),
         getEntity: Validate.func().arity(1).default(getEntity),
         isEnabled: Validate.boolean().default(true),
+        extAll: Validate.func(),
     }),
     routeSchema: Validate.alternatives().try(
         Validate.object({

@@ -185,6 +185,7 @@ exports.plugin = {
                     });
                 } else if (
                     (Utils.isUpdate(method) || Utils.isCreate(method)) &&
+                    Utils.isDelete(method) &&
                     routeOptions.isAction
                 ) {
                     auditLog = await routeOptions.ext?.(request);
@@ -267,6 +268,14 @@ exports.plugin = {
                 // skip auditing of GET requests if enabled, of injected from plugin
                 if (Utils.shouldAuditRequest(method, settings.auditGetRequests, injected)) {
                     if (auditLog != null) {
+                        if (settings?.extAll) {
+                            const extendedAuditLog = await settings?.extAll(request, auditLog);
+
+                            auditLog = {
+                                ...auditLog,
+                                ...extendedAuditLog,
+                            };
+                        }
                         server.events.emit(internals.pluginName, {
                             auditLog,
                             endpoint: routeEndpoint,
