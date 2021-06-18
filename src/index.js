@@ -184,8 +184,7 @@ exports.plugin = {
                         ...auditLog,
                     });
                 } else if (
-                    (Utils.isUpdate(method) || Utils.isCreate(method)) &&
-                    Utils.isDelete(method) &&
+                    (Utils.isUpdate(method) || Utils.isCreate(method) || Utils.isDelete(method)) &&
                     routeOptions.isAction
                 ) {
                     auditLog = await routeOptions.ext?.(request);
