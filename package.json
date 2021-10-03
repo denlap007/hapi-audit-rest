@@ -1,6 +1,6 @@
 {
   "name": "hapi-audit-rest",
-  "version": "3.5.0",
+  "version": "3.5.1",
   "description": "A NPM package to audit rest API calls on a Hapi.js server",
   "main": "lib/index.js",
   "files": [
@@ -43,23 +43,23 @@
   },
   "homepage": "https://github.com/denlap007/hapi-audit-rest#readme",
   "devDependencies": {
-    "@babel/cli": "^7.13.16",
-    "@babel/core": "^7.13.16",
-    "@babel/preset-env": "^7.13.15",
+    "@babel/cli": "^7.15.7",
+    "@babel/core": "^7.15.5",
+    "@babel/preset-env": "^7.15.6",
     "@hapi/code": "^8.0.3",
-    "@hapi/h2o2": "^9.0.2",
-    "@hapi/hapi": "^20.1.2",
-    "@hapi/lab": "^24.2.0",
+    "@hapi/h2o2": "^9.1.0",
+    "@hapi/hapi": "^20.2.0",
+    "@hapi/lab": "^24.3.2",
     "@hapi/wreck": "^17.1.0",
     "babel-eslint": "^10.1.0",
-    "eslint": "^7.25.0",
+    "eslint": "^7.32.0",
     "eslint-config-airbnb-base": "^14.2.1",
-    "eslint-config-prettier": "^8.2.0",
-    "eslint-plugin-import": "^2.22.1",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-import": "^2.24.2",
     "eslint-plugin-prettier": "^3.4.0",
     "husky": "^6.0.0",
     "lint-staged": "^10.5.4",
-    "prettier": "^2.2.1"
+    "prettier": "^2.4.1"
   },
   "dependencies": {
     "@hapi/validate": "^1.1.3"
