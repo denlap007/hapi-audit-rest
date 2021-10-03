@@ -226,6 +226,7 @@ await server.register({
 | `eventHandler`     | `Function`                | _provided_      | no                                                                                 | Handler for the emitted events. **The default** implementations prints the audit log to stdout. You will have to implement this function in order to do something with the audit log.<br><br>_Signature<br> `function ({ auditLog, routeEndpoint })`_                                                  |
 | getEntity          | `Function`                | _provided_      | no                                                                                 | Creates the entity name of the audit log. **The default** implementation `returns` the string after /api/ and before next / if any.<br><br>_Signature<br> `function (path) {return String}`_                                                                                                           |
 | isEnabled | `Boolean`  | true   | no        | Enable/Disable plugin initialization and functionality. |
+| extAll | `Function`  | -   | no        | A global override entrypoint to extend any value of any created audit log document. |
 
 ### Plugin route options
 
@@ -315,7 +316,7 @@ An _action_ audit log document is created, on pre-response lifecycle if the requ
 
 The response is _cached_ if cashing enabled.
 
-#### POST - scope collection
+#### POST - scope _resource_
 
 ##### mutation (default)
 
@@ -410,6 +411,8 @@ In cases that it is not meaningful to audit a mutation, an _action_ audit log do
 
 #### DELETE - scope resource
 
+##### mutation (default)
+
 A _mutation_ audit log document is created on pre-response lifecycle if the request succeeds with the following defaults:
 
 ```js
@@ -430,6 +433,27 @@ A _mutation_ audit log document is created on pre-response lifecycle if the requ
 ```
 
 DELETE mutations retrieve old resource state by injecting a GET by id request before the delete operation.
+
+
+##### action
+
+In cases that it is not meaningful to audit a mutation, an _action_ audit log document can be created by setting [isAction](#is-action) route parameter.
+
+```js
+{
+    application: "my-app",		// or the clientId if specified
+    type: "SEARCH",
+    body: {
+        entity: $,				// as specified by getEntity function
+        entityId: request.params.id || request.payload.id,
+        action: "SEARCH",
+        username: null,			// or the username if authenticated
+        timestamp: Date.now(),
+        data: request.payload,	// or null if request streamed
+    },
+    outcome: "Success",
+};
+```
 
 ## Error handling
 
