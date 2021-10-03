@@ -177,6 +177,83 @@ describe("Registration settings", () => {
         });
     });
 
+    it("throws when getEntity is not overriden and route does not start with /api", async () => {
+        await server.register({
+            plugin,
+            options: {
+                showErrorsOnStdErr: false,
+                // override default so that audit logs are not printed
+                eventHandler: (data) => {},
+                isAuditable: (path, method) => true,
+            },
+        });
+
+        server.events.on("hapi-audit-rest", ({ auditLog }) => {
+            auditEvent = auditLog;
+        });
+
+        server.route({
+            method: "GET",
+            path: "/test/{id}",
+            handler: (request, h) => "OK",
+        });
+
+        const res = await server.inject({
+            method: "get",
+            url: "/test/5",
+        });
+
+        expect(res.statusCode).to.equal(200);
+        expect(auditError.data).to.equal(
+            "[getEntity] ERROR: Could not extract entity for path: /test/5"
+        );
+        expect(auditEvent).to.be.null();
+    });
+
+    it("throws and logs error to stderr", async () => {
+        let loggedErr = null;
+
+        process.stderr.write_orig = process.stderr.write;
+        process.stderr.write = (data) => {
+            loggedErr = data;
+            process.stderr.write_orig(data);
+        };
+
+        await server.register({
+            plugin,
+            options: {
+                showErrorsOnStdErr: true,
+                // override default so that audit logs are not printed
+                eventHandler: (data) => {},
+                isAuditable: (path, method) => true,
+            },
+        });
+
+        server.events.on("hapi-audit-rest", ({ auditLog }) => {
+            auditEvent = auditLog;
+        });
+
+        server.route({
+            method: "GET",
+            path: "/test/{id}",
+            handler: (request, h) => "OK",
+        });
+
+        const res = await server.inject({
+            method: "get",
+            url: "/test/5",
+        });
+
+        expect(res.statusCode).to.equal(200);
+        expect(auditError.data).to.equal(
+            "[getEntity] ERROR: Could not extract entity for path: /test/5"
+        );
+        expect(auditEvent).to.be.null();
+        expect(loggedErr).to.include(
+            "[getEntity] ERROR: Could not extract entity for path: /test/5"
+        );
+    });
+
     it("audits only authenticated requests when auditAuthOnly enabled", async () => {
         server.auth.scheme("custom", (server, options) => {
             const scheme = {
@@ -399,6 +476,75 @@ describe("Registration settings", () => {
                 timestamp: auditEvent.body.timestamp,
             },
             outcome: "Success",
+        });
+    });
+
+    it("overrides completely all audit document values when extAll function is provided", async () => {
+        await server.register({
+            plugin,
+            options: {
+                eventHandler: ({ auditLog, endpoint }) => {},
+                extAll: (request, auditLog) => {
+                    expect(auditLog).to.equal({
+                        application: "my-app",
+                        type: "SEARCH",
+                        body: {
+                            entity: "test",
+                            entityId: "5",
+                            action: "SEARCH",
+                            username: null,
+                            data: {},
+                            timestamp: auditLog.body.timestamp,
+                        },
+                        outcome: "Success",
+                    });
+
+                    return {
+                        application: "custom-application",
+                        type: "custom-type",
+                        body: {
+                            entity: "custom-entity",
+                            entityId: "custom-entity-id",
+                            action: "custom-action",
+                            username: "custom-username",
+                            data: "custom-data",
+                            timestamp: "custom-timestamp",
+                        },
+                        outcome: "custom-outcome",
+                    };
+                },
+            },
+        });
+
+        server.events.on("hapi-audit-rest", ({ auditLog }) => {
+            auditEvent = auditLog;
+        });
+
+        server.route({
+            method: "GET",
+            path: "/api/test/{id}",
+            handler: (request, h) => "OK",
+        });
+
+        const res = await server.inject({
+            method: "get",
+            url: "/api/test/5",
+        });
+
+        expect(res.statusCode).to.equal(200);
+        expect(auditError).to.be.null();
+        expect(auditEvent).to.equal({
+            application: "custom-application",
+            type: "custom-type",
+            body: {
+                entity: "custom-entity",
+                entityId: "custom-entity-id",
+                action: "custom-action",
+                username: "custom-username",
+                data: "custom-data",
+                timestamp: "custom-timestamp",
+            },
+            outcome: "custom-outcome",
         });
     });
 });
