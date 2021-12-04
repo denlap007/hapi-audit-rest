@@ -1,6 +1,6 @@
 {
   "name": "hapi-audit-rest",
-  "version": "3.5.1",
+  "version": "3.5.2",
   "description": "A NPM package to audit rest API calls on a Hapi.js server",
   "main": "lib/index.js",
   "files": [
