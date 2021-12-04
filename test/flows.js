@@ -553,4 +553,308 @@ describe("flows with default settings", () => {
             outcome: "Success",
         });
     });
+
+    it("emits an action audit record with default values when ext returns null on route", async () => {
+        server.route({
+            method: "GET",
+            path: "/api/test",
+            handler: () => "OK",
+            options: {
+                plugins: {
+                    "hapi-audit-rest": {
+                        ext: async () => null,
+                    },
+                },
+            },
+        });
+
+        const res = await server.inject({
+            method: "get",
+            url: "/api/test?search=test&page=1&sort=asc",
+        });
+
+        expect(res.statusCode).to.equal(200);
+
+        expect(auditError).to.be.null();
+
+        expect(auditEvent).to.equal({
+            application: "my-app",
+            type: "SEARCH",
+            body: {
+                entity: "test",
+                entityId: null,
+                action: "SEARCH",
+                username: "user",
+                data: {
+                    search: "test",
+                    page: "1",
+                    sort: "asc",
+                },
+                timestamp: auditEvent.body.timestamp,
+            },
+            outcome: "Success",
+        });
+    });
+
+    it("emits a mutation audit record (DELETE) with overriden values returned from ext defined on route", async () => {
+        const oldValues = { id: 1, a: "a", b: "b", c: "c" };
+        const customAuditData = {
+            entity: "custom",
+            entityId: "custom-id",
+            originalValues: { custom: true },
+            newValues: { custom: false },
+        };
+
+        server.route({
+            method: "GET",
+            path: "/api/test/{id}",
+            handler: () => oldValues,
+        });
+
+        server.route({
+            method: "DELETE",
+            path: "/api/test/{id}",
+            handler: () => "OK",
+            options: {
+                plugins: {
+                    "hapi-audit-rest": {
+                        ext: async () => customAuditData,
+                    },
+                },
+            },
+        });
+
+        const res = await server.inject({
+            method: "DELETE",
+            url: "/api/test/5",
+        });
+
+        expect(res.statusCode).to.equal(200);
+
+        expect(auditError).to.be.null();
+
+        expect(auditEvent).to.equal({
+            application: "my-app",
+            type: "MUTATION",
+            body: {
+                action: "DELETE",
+                username: "user",
+                timestamp: auditEvent.body.timestamp,
+                ...customAuditData,
+            },
+            outcome: "Success",
+        });
+    });
+
+    it("emits a mutation audit record (DELETE) with default values when ext is null on route", async () => {
+        const oldValues = { id: 1, a: "a", b: "b", c: "c" };
+
+        server.route({
+            method: "GET",
+            path: "/api/test/{id}",
+            handler: () => oldValues,
+        });
+
+        server.route({
+            method: "DELETE",
+            path: "/api/test/{id}",
+            handler: () => "OK",
+            options: {
+                plugins: {
+                    "hapi-audit-rest": {
+                        ext: null,
+                    },
+                },
+            },
+        });
+
+        const res = await server.inject({
+            method: "DELETE",
+            url: "/api/test/5",
+        });
+
+        expect(res.statusCode).to.equal(200);
+
+        expect(auditError).to.be.null();
+
+        expect(auditEvent).to.equal({
+            application: "my-app",
+            type: "MUTATION",
+            body: {
+                entity: "test",
+                entityId: "5",
+                action: "DELETE",
+                username: "user",
+                originalValues: oldValues,
+                newValues: null,
+                timestamp: auditEvent.body.timestamp,
+            },
+            outcome: "Success",
+        });
+    });
+
+    it("emits an action audit record with default values when ext is null on route", async () => {
+        server.route({
+            method: "GET",
+            path: "/api/test",
+            handler: () => "OK",
+            options: {
+                plugins: {
+                    "hapi-audit-rest": {
+                        ext: null,
+                    },
+                },
+            },
+        });
+
+        const res = await server.inject({
+            method: "get",
+            url: "/api/test?search=test&page=1&sort=asc",
+        });
+
+        expect(res.statusCode).to.equal(200);
+
+        expect(auditError).to.be.null();
+
+        expect(auditEvent).to.equal({
+            application: "my-app",
+            type: "SEARCH",
+            body: {
+                entity: "test",
+                entityId: null,
+                action: "SEARCH",
+                username: "user",
+                data: {
+                    search: "test",
+                    page: "1",
+                    sort: "asc",
+                },
+                timestamp: auditEvent.body.timestamp,
+            },
+            outcome: "Success",
+        });
+    });
+
+    it("emits a mutation audit record (POST) with overriden values returned from ext defined on route", async () => {
+        const oldValues = { id: 1, a: "a", b: "b", c: "c" };
+        const customAuditData = {
+            entity: "custom",
+            entityId: "custom-id",
+            originalValues: { custom: true },
+            newValues: { custom: false },
+        };
+
+        server.route({
+            method: "POST",
+            path: "/api/test",
+            handler: () => "OK",
+            options: {
+                plugins: {
+                    "hapi-audit-rest": {
+                        ext: async () => customAuditData,
+                    },
+                },
+            },
+        });
+
+        const res = await server.inject({
+            method: "POST",
+            url: "/api/test",
+            payload: oldValues,
+        });
+
+        expect(res.statusCode).to.equal(200);
+
+        expect(auditError).to.be.null();
+
+        expect(auditEvent).to.equal({
+            application: "my-app",
+            type: "MUTATION",
+            body: {
+                action: "CREATE",
+                username: "user",
+                timestamp: auditEvent.body.timestamp,
+                ...customAuditData,
+            },
+            outcome: "Success",
+        });
+    });
+
+    it("emits a mutation audit record (POST) with the request payload as data when response is null", async () => {
+        const payload = { id: 1, a: "a", b: "b", c: "c" };
+
+        server.route({
+            method: "POST",
+            path: "/api/test",
+            handler: (request, h) => h.response().code(204),
+        });
+
+        const res = await server.inject({
+            method: "POST",
+            url: "/api/test",
+            payload,
+        });
+
+        expect(res.statusCode).to.equal(204);
+
+        expect(auditError).to.be.null();
+
+        expect(auditEvent).to.equal({
+            application: "my-app",
+            type: "MUTATION",
+            body: {
+                entity: "test",
+                entityId: 1,
+                action: "CREATE",
+                username: "user",
+                originalValues: null,
+                newValues: payload,
+                timestamp: auditEvent.body.timestamp,
+            },
+            outcome: "Success",
+        });
+    });
+
+    it("emits a mutation audit record (POST) with default values when ext returns null on route", async () => {
+        const payload = { a: "a", b: "b", c: "c" };
+        const response = { id: 1, a: "a", b: "b", c: "c" };
+
+        server.route({
+            method: "post",
+            path: "/api/test",
+            handler: () => response,
+            options: {
+                plugins: {
+                    "hapi-audit-rest": {
+                        ext: null,
+                    },
+                },
+            },
+        });
+
+        const res = await server.inject({
+            method: "post",
+            url: "/api/test",
+            payload,
+        });
+
+        expect(res.statusCode).to.equal(200);
+
+        expect(auditError).to.be.null();
+
+        expect(auditEvent).to.equal({
+            application: "my-app",
+            type: "MUTATION",
+            body: {
+                entity: "test",
+                entityId: 1,
+                action: "CREATE",
+                username: "user",
+                originalValues: null,
+                newValues: response,
+                timestamp: auditEvent.body.timestamp,
+            },
+            outcome: "Success",
+        });
+    });
 });

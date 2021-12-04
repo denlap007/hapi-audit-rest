@@ -76,23 +76,24 @@ exports.plugin = {
 
         server.ext("onPreHandler", async (request, h) => {
             try {
+                const { [internals.pluginName]: routeOptions = {} } =
+                    request.route.settings.plugins;
                 const {
-                    [internals.pluginName]: routeOptions = {},
-                } = request.route.settings.plugins;
-                const {
+                    headers: { injected },
                     url: { pathname },
                     method,
                 } = request;
 
                 /**
                  * skip audit if disabled on route, not authenticated and auditAuthOnly enabled, path does not match criteria
-                 * if this will be handled as a custom action skip to process on preResponse
+                 * if this will be handled as a custom action skip to process on preResponse, is GET and disabled, is injected
                  */
                 if (
                     !Utils.isEnabled(routeOptions) ||
                     (settings.auditAuthOnly && !request.auth.isAuthenticated) ||
                     !settings.isAuditable(pathname, method) ||
-                    routeOptions.isAction
+                    routeOptions.isAction ||
+                    !Utils.isGetRequestAuditable(method, settings.auditGetRequests, injected)
                 ) {
                     return h.continue;
                 }
@@ -124,9 +125,8 @@ exports.plugin = {
 
         server.ext("onPreResponse", async (request, h) => {
             try {
-                const {
-                    [internals.pluginName]: routeOptions = {},
-                } = request.route.settings.plugins;
+                const { [internals.pluginName]: routeOptions = {} } =
+                    request.route.settings.plugins;
                 const username = Utils.getUser(request, settings.usernameKey);
                 const {
                     url: { pathname },
@@ -139,12 +139,14 @@ exports.plugin = {
                 } = request;
                 const { injected } = headers;
 
-                // skip audit if disabled on route, not authenticated and auditAuthOnly enabled, path does not match criteria, call failed
+                /* skip audit if disabled on route, not authenticated and auditAuthOnly enabled, path does not match criteria, call failed
+                    is GET and disabled, is injected */
                 if (
                     !Utils.isEnabled(routeOptions) ||
                     (settings.auditAuthOnly && !request.auth.isAuthenticated) ||
                     !settings.isAuditable(pathname, method) ||
-                    !Utils.isSuccess(statusCode)
+                    !Utils.isSuccess(statusCode) ||
+                    !Utils.isGetRequestAuditable(method, settings.auditGetRequests, injected)
                 ) {
                     return h.continue;
                 }
@@ -166,7 +168,7 @@ exports.plugin = {
                 const getEndpoint = Utils.toEndpoint("get", pathname, pathOverride);
                 let auditLog = null;
 
-                if (Utils.isRead(method) && injected == null) {
+                if (Utils.isRead(method)) {
                     auditLog = await routeOptions.ext?.(request);
                     Validate.assert(auditLog, Schemas.actionSchema);
 
@@ -191,7 +193,7 @@ exports.plugin = {
                     Validate.assert(auditLog, Schemas.actionSchema);
 
                     if (Utils.isStream(reqPayload) && auditLog == null) {
-                        throw new Error(`Cannot raed streamed payload on ${routeEndpoint}`);
+                        throw new Error(`Cannot read streamed payload on ${routeEndpoint}`);
                     }
 
                     auditLog = createAction({
@@ -260,28 +262,25 @@ exports.plugin = {
                             ...auditLog,
                         });
                     } else {
-                        throw new Error(`Cannot raed streamed response on ${routeEndpoint}`);
+                        throw new Error(`Cannot read streamed response on ${routeEndpoint}`);
                     }
                 }
 
-                // skip auditing of GET requests if enabled, of injected from plugin
-                if (Utils.shouldAuditRequest(method, settings.auditGetRequests, injected)) {
-                    if (auditLog != null) {
-                        if (settings?.extAll) {
-                            const extendedAuditLog = await settings?.extAll(request, auditLog);
+                if (auditLog != null) {
+                    if (settings?.extAll) {
+                        const extendedAuditLog = await settings?.extAll(request, auditLog);
 
-                            auditLog = {
-                                ...auditLog,
-                                ...extendedAuditLog,
-                            };
-                        }
-                        server.events.emit(internals.pluginName, {
-                            auditLog,
-                            endpoint: routeEndpoint,
-                        });
-                    } else {
-                        throw new Error(`Null auditLog record for endpoint: ${routeEndpoint}`);
+                        auditLog = {
+                            ...auditLog,
+                            ...extendedAuditLog,
+                        };
                     }
+                    server.events.emit(internals.pluginName, {
+                        auditLog,
+                        endpoint: routeEndpoint,
+                    });
+                } else {
+                    throw new Error(`Null auditLog record for endpoint: ${routeEndpoint}`);
                 }
             } catch (error) {
                 internals.handleError(settings, request, error);

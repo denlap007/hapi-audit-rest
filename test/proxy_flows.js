@@ -228,7 +228,7 @@ describe("PROXY flows with default settings", () => {
 
         expect(res.statusCode).to.equal(200);
 
-        expect(auditError.data).to.equal("Cannot raed streamed response on post:/api/test");
+        expect(auditError.data).to.equal("Cannot read streamed response on post:/api/test");
 
         expect(auditEvent).to.be.null();
 
@@ -542,9 +542,69 @@ describe("PROXY flows with default settings", () => {
 
         expect(res.statusCode).to.equal(200);
 
-        expect(auditError.data).to.equal("Cannot raed streamed payload on post:/api/test");
+        expect(auditError.data).to.equal("Cannot read streamed payload on post:/api/test");
 
         expect(auditEvent).to.be.null();
+
+        await upstream.stop();
+    });
+
+    it("ceates an action audit record on POST when isAction enabled on route and ext returns an empty object", async () => {
+        const reqPayload = { a: "a", b: "b", c: "c" };
+        const resPayload = { id: 1, a: "a", b: "b", c: "c" };
+        const testPayload = { custom: true };
+
+        upstream.route({
+            method: "POST",
+            path: "/api/test",
+            handler: (request, h) => resPayload,
+        });
+
+        await upstream.start();
+
+        server.route({
+            method: "POST",
+            path: "/api/test",
+            handler: {
+                proxy: {
+                    host: "localhost",
+                    port: upstream.info.port,
+                    protocol: "http",
+                },
+            },
+            options: {
+                plugins: {
+                    "hapi-audit-rest": {
+                        isAction: true,
+                        ext: async () => ({}),
+                    },
+                },
+            },
+        });
+
+        const res = await server.inject({
+            method: "POST",
+            payload: reqPayload,
+            url: "/api/test",
+        });
+
+        expect(res.statusCode).to.equal(200);
+
+        expect(auditError).to.be.null();
+
+        expect(auditEvent).to.equal({
+            application: "my-app",
+            type: "SEARCH",
+            body: {
+                entity: "test",
+                entityId: null,
+                action: "SEARCH",
+                username: "user",
+                data: null,
+                timestamp: auditEvent.body.timestamp,
+            },
+            outcome: "Success",
+        });
 
         await upstream.stop();
     });

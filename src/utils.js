@@ -16,36 +16,34 @@ export default {
     toEndpoint: (method, path, getPath) => (getPath ? `${method}:${getPath}` : `${method}:${path}`),
     isSuccess: (code) =>
         Number.isInteger(code) && parseInt(code, 10) >= 200 && parseInt(code, 10) <= 299,
-    initMutation: ({ method, clientId, username }) => ({
-        entity,
-        entityId,
-        action,
-        originalValues,
-        newValues,
-    }) =>
-        new AuditMutation({
-            method,
-            application: clientId,
-            entity,
-            entityId,
-            action,
-            username,
-            originalValues,
-            newValues,
-        }),
-    initAction: ({ clientId, username }) => ({ entity, entityId, data, action, type }) =>
-        new AuditAction({
-            application: clientId,
-            type,
-            entity,
-            entityId,
-            username,
-            data,
-            action,
-        }),
+    initMutation:
+        ({ method, clientId, username }) =>
+        ({ entity, entityId, action, originalValues, newValues }) =>
+            new AuditMutation({
+                method,
+                application: clientId,
+                entity,
+                entityId,
+                action,
+                username,
+                originalValues,
+                newValues,
+            }),
+    initAction:
+        ({ clientId, username }) =>
+        ({ entity, entityId, data, action, type }) =>
+            new AuditAction({
+                application: clientId,
+                type,
+                entity,
+                entityId,
+                username,
+                data,
+                action,
+            }),
     gotResponseData: (data) => data != null,
-    shouldAuditRequest: (method, auditGetRequests, injected) =>
-        injected == null && ((method === "get" && auditGetRequests) || method !== "get"),
+    isGetRequestAuditable: (method, auditGetRequests, injected) =>
+        method === "get" ? injected == null && auditGetRequests : true,
     removeProps: (left, right, props) => {
         if (Array.isArray(props) && isObject(left) && isObject(right)) {
             props.forEach((key) => {
