@@ -125,7 +125,7 @@ describe("Registration settings", () => {
         await server.register({
             plugin,
             options: {
-                showErrorsOnStdErr: false,
+                debug: false,
                 // override default so that audit logs are not printed
                 eventHandler: (data) => {},
                 isAuditable: (path, method) => true,
@@ -166,8 +166,7 @@ describe("Registration settings", () => {
         await server.register({
             plugin,
             options: {
-                showErrorsOnStdErr: true,
-                // override default so that audit logs are not printed
+                debug: true,
                 eventHandler: (data) => {},
                 isAuditable: (path, method) => true,
             },

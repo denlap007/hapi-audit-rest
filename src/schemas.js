@@ -32,7 +32,7 @@ const getEntity = () => (path) => {
 export default {
     baseSchema: Validate.object({
         auditGetRequests: Validate.boolean().default(true),
-        showErrorsOnStdErr: Validate.boolean().default(true),
+        debug: Validate.boolean().default(false),
         diffFunc: Validate.func().arity(2).default(diff),
         cacheEnabled: Validate.boolean().default(true),
         clientId: Validate.string().default(constants.DERAULT_CLIENT_ID),

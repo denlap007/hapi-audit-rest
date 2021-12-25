@@ -11,7 +11,7 @@ internals.pluginName = "hapi-audit-rest";
 internals.schema = Schemas.baseSchema;
 
 internals.handleError = (settings, request, error) => {
-    if (settings.showErrorsOnStdErr) {
+    if (settings.debug) {
         console.error(`[${internals.pluginName}]`, error);
     }
     request.log(["error", internals.pluginName], error.message);
