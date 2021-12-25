@@ -104,7 +104,7 @@ exports.plugin = {
                 const getEndpoint = Utils.toEndpoint("get", pathname, pathOverride);
 
                 if (Utils.isUpdate(method)) {
-                    let oldVals = settings.cacheEnabled ? oldValsCache.get(getEndpoint) : null;
+                    let oldVals = settings.isCacheEnabled ? oldValsCache.get(getEndpoint) : null;
 
                     if (oldVals == null) {
                         oldVals = await internals.fetchValues(request, pathOverride);
@@ -173,7 +173,7 @@ exports.plugin = {
                     const entityId = auditLog?.entityId || Utils.getId(params);
 
                     // cache only GET by id response
-                    if (settings.cacheEnabled && !Utils.isStream(resp) && !!entityId) {
+                    if (settings.isCacheEnabled && !Utils.isStream(resp) && !!entityId) {
                         oldValsCache.set(getEndpoint, resp);
                     }
 

@@ -22,7 +22,7 @@ export default {
         auditGetRequests: Validate.boolean().default(true),
         debug: Validate.boolean().default(false),
         diffFunc: Validate.func().arity(2).default(diff),
-        cacheEnabled: Validate.boolean().default(true),
+        isCacheEnabled: Validate.boolean().default(true),
         clientId: Validate.string().default(constants.DERAULT_CLIENT_ID),
         usernameKey: Validate.string(),
         cacheExpiresIn: Validate.number()

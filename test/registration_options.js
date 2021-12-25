@@ -34,7 +34,7 @@ describe("Registration settings", () => {
             plugin,
             options: {
                 eventHandler: (data) => {},
-                cacheEnabled: false,
+                isCacheEnabled: false,
                 getEntity: (path) => path.split("/")[2],
             },
         });
