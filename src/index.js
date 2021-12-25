@@ -84,14 +84,14 @@ exports.plugin = {
                 } = request;
 
                 /**
-                 * skip audit if disabled on route, path does not match criteria
-                 * if this will be handled as a custom action skip to process on preResponse, is GET request go on preResponse
+                 * skip pre-handler if disabled on route, is GET request, request not auditable
+                 * if this will be handled as a custom action skip to process on preResponse
                  */
                 if (
                     !Utils.isEnabled(routeOptions) ||
+                    Utils.isRead(method) ||
                     !settings.isAuditable(request) ||
-                    routeOptions.isAction ||
-                    Utils.isRead(method)
+                    routeOptions.isAction
                 ) {
                     return h.continue;
                 }
@@ -137,7 +137,7 @@ exports.plugin = {
                 } = request;
                 const { injected } = headers;
                 /**
-                 * skip audit IF disabled on route, path does not match criteria,
+                 * skip audit IF disabled on route, request not auditable,
                  * call failed, is injected GET request
                  */
                 if (

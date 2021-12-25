@@ -423,4 +423,34 @@ describe("Registration settings", () => {
             outcome: "custom-outcome",
         });
     });
+
+    it("does not audit request if isAuditable returns false", async () => {
+        const routePath = "/api/test/custom";
+        await server.register({
+            plugin,
+            options: {
+                eventHandler: (data) => {},
+                isAuditable: ({ path }) => path !== routePath,
+            },
+        });
+
+        server.events.on("hapi-audit-rest", ({ auditLog }) => {
+            auditEvent = auditLog;
+        });
+
+        server.route({
+            method: "GET",
+            path: routePath,
+            handler: (request, h) => "OK",
+        });
+
+        const res = await server.inject({
+            method: "get",
+            url: routePath,
+        });
+
+        expect(res.statusCode).to.equal(200);
+        expect(auditError).to.be.null();
+        expect(auditEvent).to.be.null();
+    });
 });
