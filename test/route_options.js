@@ -216,7 +216,7 @@ describe("Route settings", () => {
         });
     });
 
-    it("overrides the default endpoint to get values before update when getPath function is provided", async () => {
+    it("overrides the default endpoint to get values before update when setInjectedPath function is provided", async () => {
         await server.register({
             plugin,
             options: {
@@ -245,7 +245,7 @@ describe("Route settings", () => {
             options: {
                 plugins: {
                     "hapi-audit-rest": {
-                        getPath: ({ query, params }) => `/api/different/${params.id}`,
+                        setInjectedPath: ({ query, params }) => `/api/different/${params.id}`,
                     },
                 },
             },
@@ -363,7 +363,7 @@ describe("Route settings", () => {
                     "hapi-audit-rest": {
                         ext: async () => {},
                         isAction: true,
-                        getPath: () => {},
+                        setInjectedPath: () => {},
                         fetchNewValues: true,
                     },
                 },

@@ -25,19 +25,21 @@ Small opinionated [Hapi.js] plugin that generates **audit logs** for **RESTful A
   - [Flows & Audit Log Data](#flows--audit-log-data)
       - [GET - scope _collection_](#get---scope-collection)
       - [GET - scope _resource_](#get---scope-resource)
-      - [POST - scope collection](#post---scope-collection)
+      - [POST - scope _resource_](#post---scope-resource)
         - [mutation (default)](#mutation-default)
         - [action](#action)
-      - [PUT - scope resource](#put---scope-resource)
+      - [PUT - scope _resource_](#put---scope-resource)
         - [mutation (default)](#mutation-default-1)
         - [action](#action-1)
-      - [DELETE - scope resource](#delete---scope-resource)
+      - [DELETE - scope _resource_](#delete---scope-resource)
+        - [mutation (default)](#mutation-default-2)
+        - [action](#action-2)
   - [Error handling](#error-handling)
   - [License](#license)
 
 ## Requirements
 
-Works with Hapi **v18** or higher, Node.js **v12** or higher
+Works with Hapi **v18** or higher, Node.js **v14** or higher
 
 ## Installation
 
@@ -53,12 +55,18 @@ npm test
 
 ## About
 
-This plugin creates audit log documents:
+This plugin creates audit log documents based on REST semantics.
 
--   **Actions**: general interactions (GET).
--   **Mutations**: track **old and new state** of a resource (POST, PUT, DELETE), to effectively **reason about state changes**.
+| HTTP method | Description             | Audit Log Document |
+| ----------- | ----------------------- | ------------------ |
+| GET         | Retrieve resources      | Action             |
+| POST        | Create a new resource   | Mutation - Create  |
+| PUT         | Update a resource       | Mutation - Update  |
+| DELETE      | Delete a resource       | Mutation - Delete  |
 
-For every request an **event** is emitted with an **audit log** (action or mutation) document.
+**Mutations** track **old and new state** of a resource to effectively **reason about state changes**.
+
+For every request an **event** is emitted with an **audit log** document.
 
 ## Quickstart
 
@@ -224,7 +232,7 @@ await server.register({
 | `eventHandler`     | `Function`                | _provided_      | no                                                                                 | Handler for the emitted events. **The default** implementations prints the audit log to stdout. You will have to implement this function in order to do something with the audit log.<br><br>_Signature<br> `function ({ auditLog, routeEndpoint })`_                                                  |
 | getEntity          | `Function`                | _provided_      | no                                                                                 | Creates the entity name of the audit log. **The default** implementation `returns` the endpoint path.<br><br>_Signature<br> `function (path) {return String}`_                                                                                                           |
 | isEnabled | `Boolean`  | true   | no        | Enable/Disable plugin initialization and functionality. |
-| extAll | `Function`  | -   | no        | A global override entrypoint to extend any value of any created audit log document. |
+| extAll | `Function`  | -   | no        | <a name="extAll"></a>A global override entrypoint to extend any value of any created audit log document. |
 
 ### Plugin route options
 
@@ -243,7 +251,7 @@ options: {
 | -------------- | ---------- | ------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | ext            | `Function` |         | no        | <a name="ext"></a>An extension point per route, invoked on `pre-response`, to **customize audit log document values**: <ul><li>on GET<br>`async (request) => AuditAction`</li><li>on POST<br>`async (request, { newVals }) => AuditMutation`</li><li>on PUT<br>`async (request, { oldVals, newVals, diff }) => AuditMutation`<br><br>diff: `({diffOnly, skipDiff}) => [originalValues, newValues]` </li><li>on DELETE<br>`async (request, { oldVals }) => AuditMutation`</li><li>on PUT/POST and _isAction=true_ <br>`async (request) => AuditAction`</li></ul>Must `return an object (AuditAction or AuditMutation)` with any of the following **properties to override the default values**: <ul><li>Audit Action<ul><li>type `String`</li><li>entity `String`</li><li>entityId `String`/`Number`/`Null`</li><li>action `String`</li><li>data `Object`/`Null`</li></ul></li><li>Audit Mutation<ul><li>entity `String`</li><li>entityId `String`/`Number`/`Null`</li><li>action `String`</li><li>originalValues `Object`/`Array`/`Null`</li><li>newValues `Object`/`Array`/`Null`</li></ul></li></ul> |
 | isAction       | `Boolean`  | false   | no        | <a name="is-action"></a>Enable/Disable creation of **action** audit log documents for **PUT/POST** requests instead of mutation.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| getPath        | `Function` |         | no        | <a name="get-path"></a>On PUT requests, old and/or new values are fetched by injecting a **GET by id** request, based on PUT route path. When GET by id route path differs, it must be provided. <br><br>_Signature<br> `function (request) {return String}`_                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| setInjectedpath        | `Function` |         | no        | <a name="get-path"></a>On PUT requests, old and/or new values are fetched by injecting a **GET by id** request, based on PUT route path. When GET by id route path differs, it must be provided. <br><br>_Signature<br> `function (request) {return String}`_                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | fetchNewValues | `Boolean`  | false   | no        | <a name="fetch-new"></a>On PUT requests, the **incoming payload** will be used as **newValues**. In case there are any model inconsistencies, this option will inject a **GET by id** request to **fetch the newValues**.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 
 #### Disable plugin on route
@@ -270,7 +278,7 @@ To effectively track old and new state of a resource, the plugin implements inte
 | PUT         | resource   | Update a resource                      |
 | DELETE      | resource   | Delete a resource                      |
 
-The user can **override** audit log document defaults by using the route [extension point](#ext).
+To **override** audit log document defaults use the route [extension point](#ext).
 
 #### GET - scope _collection_
 
@@ -384,7 +392,7 @@ A _mutation_ audit log document is created on pre-response lifecycle if the requ
 
 PUT mutations are the most complex.
 
--   Before the update, the original resource state is retrieved by inspecting the cache. If not in cache a GET by id request is injected based on the current request path (custom path can be set on route with [getPath](#get-path)).
+-   Before the update, the original resource state is retrieved by inspecting the cache. If not in cache a GET by id request is injected based on the current request path (custom path can be set on route with [setInjectedpath](#get-path)).
 -   After the update, the new resource state is retrieved from the request payload. If the request is streamed or the [fetchNewValues](#fetch-new) option is set, a GET by id request will be injected to fetch the new resource state.
 
 ##### action
@@ -470,7 +478,7 @@ server.events.on({ name: "request", channels: "app" }, (request, event, tags) =>
 });
 ```
 
-If `debug` option is disabled (default), the error message will be printed to stderr for convenience.
+If `debug` option is enabled (disabled by default), the error message will be printed to stderr for convenience.
 
 ## License
 

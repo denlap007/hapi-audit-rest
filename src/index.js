@@ -98,7 +98,7 @@ exports.plugin = {
 
                 // Ovveride, creates GET endpoint
                 const pathOverride = Validate.attempt(
-                    routeOptions.getPath?.(request),
+                    routeOptions.setInjectedPath?.(request),
                     Schemas.getRoutePath
                 );
                 const getEndpoint = Utils.toEndpoint("get", pathname, pathOverride);
@@ -150,7 +150,7 @@ exports.plugin = {
                 }
 
                 const pathOverride = Validate.attempt(
-                    routeOptions.getPath?.(request),
+                    routeOptions.setInjectedPath?.(request),
                     Schemas.getRoutePath
                 );
                 const createMutation = Utils.initMutation({

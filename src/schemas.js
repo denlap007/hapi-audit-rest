@@ -40,7 +40,7 @@ export default {
         Validate.object({
             ext: Validate.func(),
             isAction: Validate.boolean().default(false),
-            getPath: Validate.func(),
+            setInjectedPath: Validate.func(),
             fetchNewValues: Validate.boolean().default(false),
         }),
         Validate.boolean()
