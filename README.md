@@ -214,7 +214,7 @@ await server.register({
 
 | Name               | Type                      | Default         | Mandatory                                                                          | Description                                                                                                                                                                                                                                                                                            |
 | ------------------ | ------------------------- | --------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| debug | `Boolean`                 | true            | no                                                                                 | Display errors on std error stream.                                                                                                                                                                                                                                                                    |
+| debug | `Boolean`                 | false            | no                                                                                 | Display errors on std error stream.                                                                                                                                                                                                                                                                    |
 | diffFunc           | `Function`                | _provided_      | no                                                                                 | External function to diff old and new values, Must `return` an array with two elements: old values and new values, with that order. **The default** implementation `returns` **fetched old and new values**. <br><br>_Signature<br> `function (oldValues, newValues) {return [oldValues, newValues]}`_ |
 | cacheEnabled       | `Boolean`                 | true            | no                                                                                 | Enable/Disable internal cache. **Use cache** only if running an **one instance server (default enabled)**. If a GET by id is triggered before an update (PUT), old values will be loaded from cache instead of requiring an extra GET by id API call.                                                  |
 | clientId           | `String`                  | my-app          | no                                                                                 | Application instance name or auth client id.                                                                                                                                                                                                                                                           |
@@ -470,7 +470,7 @@ server.events.on({ name: "request", channels: "app" }, (request, event, tags) =>
 });
 ```
 
-If `debug` option is enabled (default), the error message will be printed to stderr for convenience.
+If `debug` option is disabled (default), the error message will be printed to stderr for convenience.
 
 ## License
 
