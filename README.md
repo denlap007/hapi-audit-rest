@@ -234,6 +234,48 @@ await server.register({
 | isEnabled | `Boolean`  | true   | no        | Enable/Disable plugin initialization and functionality. |
 | extAll | `Function`  | -   | no        | <a name="extAll"></a>A global override entrypoint to extend any value of any created audit log document. |
 
+#### Handle common cases
+Common use cases for **isAuditable** option:
+```js
+await server.register({
+    plugin: require("hapi-audit-rest"),
+    options: {
+        isAuditable: ({ auth: { isAuthenticated }, method, url: { pathname } }) => {
+            // do not audit unauthenticated requests
+            if (!isAuthenticated) {
+                return false
+            }
+            
+            // do not audit GET requests
+            if (method === "get") {
+                return false
+            }
+            
+            // do not audit requests when path does not start from /api
+            if (!pathname.startsWith("/api")) {
+                return false
+            }
+            
+            // return true to audit all other cases
+            return true
+        }
+    },
+});
+```
+
+Common use cases for **setEntity** option:
+```js
+await server.register({
+    plugin: require("hapi-audit-rest"),
+    options: {
+        // use the standard pattern of an api i.e. /api/v1.0/users, to refine the entity name
+        // will have 'entity: users' in audit log
+        setEntity: (path) => path.split("/")[3], 
+        }
+    },
+});
+```
+
 ### Plugin route options
 
 ```js
