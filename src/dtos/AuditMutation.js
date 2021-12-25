@@ -16,12 +16,14 @@ class AuditMutation {
         } = input;
         let httpAction = null;
 
-        if (!action && `${method}`.toLowerCase() === "put") {
-            httpAction = MUTATION_ACTION.MUTATION_UPDATE;
-        } else if (!action && `${method}`.toLowerCase() === "post") {
-            httpAction = MUTATION_ACTION.MUTATION_CREATE;
-        } else if (!action && `${method}`.toLowerCase() === "delete") {
-            httpAction = MUTATION_ACTION.MUTATION_DELETE;
+        if (!action) {
+            if (method === "put") {
+                httpAction = MUTATION_ACTION.MUTATION_UPDATE;
+            } else if (!action && method === "post") {
+                httpAction = MUTATION_ACTION.MUTATION_CREATE;
+            } else if (!action && method === "delete") {
+                httpAction = MUTATION_ACTION.MUTATION_DELETE;
+            }
         }
 
         this.application = application;
