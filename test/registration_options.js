@@ -282,77 +282,77 @@ describe("Registration settings", () => {
         expect(auditEvent).to.be.null();
     });
 
-    // it("checks cache eviction (waits 2 minutes)", { timeout: 130000 }, async (flags) => {
-    //     await server.register({
-    //         plugin,
-    //         options: {
-    //             // override default so that audit logs are not printed
-    //             eventHandler: (data) => {},
-    //             cacheExpiresIn: 60000,
-    //             getEntity: (path) => path.split("/")[2],
-    //         },
-    //     });
+    it("checks cache eviction (waits 2 minutes)", { timeout: 130000 }, async (flags) => {
+        await server.register({
+            plugin,
+            options: {
+                // override default so that audit logs are not printed
+                eventHandler: (data) => {},
+                cacheExpiresIn: 60000,
+                getEntity: (path) => path.split("/")[2],
+            },
+        });
 
-    //     server.events.on("hapi-audit-rest", ({ auditLog }) => {
-    //         auditEvent = auditLog;
-    //     });
+        server.events.on("hapi-audit-rest", ({ auditLog }) => {
+            auditEvent = auditLog;
+        });
 
-    //     const reqPayload = { a: "a", b: "bb", c: "cc" };
-    //     const oldVals = { id: 1, a: "a", b: "b", c: "c" };
+        const reqPayload = { a: "a", b: "bb", c: "cc" };
+        const oldVals = { id: 1, a: "a", b: "b", c: "c" };
 
-    //     const getHandler = (request, h) => oldVals;
-    //     // 1 call injected below and 1 call automatically injected because cache is disabled
-    //     const wrapped = flags.mustCall(getHandler, 2);
+        const getHandler = (request, h) => oldVals;
+        // 1 call injected below and 1 call automatically injected because cache is disabled
+        const wrapped = flags.mustCall(getHandler, 2);
 
-    //     server.route({
-    //         method: "GET",
-    //         path: "/api/test/{id}",
-    //         handler: wrapped,
-    //     });
+        server.route({
+            method: "GET",
+            path: "/api/test/{id}",
+            handler: wrapped,
+        });
 
-    //     server.route({
-    //         method: "PUT",
-    //         path: "/api/test/{id}",
-    //         handler: (request, h) => "OK",
-    //     });
+        server.route({
+            method: "PUT",
+            path: "/api/test/{id}",
+            handler: (request, h) => "OK",
+        });
 
-    //     // used to enable caching of oldValues
-    //     await server.inject({
-    //         method: "get",
-    //         url: "/api/test/5",
-    //     });
+        // used to enable caching of oldValues
+        await server.inject({
+            method: "get",
+            url: "/api/test/5",
+        });
 
-    //     // wait > 1 minute for cache to expire (minimum 1 minute)
-    //     // cache eviction will occur in 1 minute, (as defined in test with cacheExpiresIn: 60000)
-    //     // to avoid race conditions cache values stored for more than 1 minute (cache default build-in)
-    //     // from the moment the eviction will occur, will be cleared
-    //     await new Promise((resolve) => setTimeout(resolve, 120000));
+        // wait > 1 minute for cache to expire (minimum 1 minute)
+        // cache eviction will occur in 1 minute, (as defined in test with cacheExpiresIn: 60000)
+        // to avoid race conditions cache values stored for more than 1 minute (cache default build-in)
+        // from the moment the eviction will occur, will be cleared
+        await new Promise((resolve) => setTimeout(resolve, 120000));
 
-    //     const res = await server.inject({
-    //         method: "PUT",
-    //         payload: reqPayload,
-    //         url: "/api/test/5",
-    //     });
+        const res = await server.inject({
+            method: "PUT",
+            payload: reqPayload,
+            url: "/api/test/5",
+        });
 
-    //     expect(res.statusCode).to.equal(200);
+        expect(res.statusCode).to.equal(200);
 
-    //     expect(auditError).to.be.null();
+        expect(auditError).to.be.null();
 
-    //     expect(auditEvent).to.equal({
-    //         application: "my-app",
-    //         type: "MUTATION",
-    //         body: {
-    //             entity: "test",
-    //             entityId: "5",
-    //             action: "UPDATE",
-    //             username: null,
-    //             originalValues: oldVals,
-    //             newValues: reqPayload,
-    //             timestamp: auditEvent.body.timestamp,
-    //         },
-    //         outcome: "Success",
-    //     });
-    // });
+        expect(auditEvent).to.equal({
+            application: "my-app",
+            type: "MUTATION",
+            body: {
+                entity: "test",
+                entityId: "5",
+                action: "UPDATE",
+                username: null,
+                originalValues: oldVals,
+                newValues: reqPayload,
+                timestamp: auditEvent.body.timestamp,
+            },
+            outcome: "Success",
+        });
+    });
 
     it("overrides completely all audit document values when extAll function is provided", async () => {
         await server.register({
