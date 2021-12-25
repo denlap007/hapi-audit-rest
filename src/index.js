@@ -178,7 +178,7 @@ exports.plugin = {
                     }
 
                     auditLog = createAction({
-                        entity: settings.getEntity(pathname),
+                        entity: settings.setEntity(pathname),
                         entityId,
                         data: query,
                         ...auditLog,
@@ -195,7 +195,7 @@ exports.plugin = {
                     }
 
                     auditLog = createAction({
-                        entity: settings.getEntity(pathname),
+                        entity: settings.setEntity(pathname),
                         entityId: Utils.isStream(reqPayload)
                             ? Utils.getId(params)
                             : Utils.getId(params, reqPayload),
@@ -226,7 +226,7 @@ exports.plugin = {
                     const [originalValues, newValues] = settings.diffFunc(oldVals, newVals);
 
                     auditLog = createMutation({
-                        entity: settings.getEntity(pathname),
+                        entity: settings.setEntity(pathname),
                         entityId: Utils.getId(params, newVals),
                         originalValues,
                         newValues,
@@ -241,7 +241,7 @@ exports.plugin = {
                     Validate.assert(auditLog, Schemas.mutationSchema);
 
                     auditLog = createMutation({
-                        entity: settings.getEntity(pathname),
+                        entity: settings.setEntity(pathname),
                         entityId: Utils.getId(params, oldVals),
                         originalValues: oldVals,
                         ...auditLog,
@@ -254,7 +254,7 @@ exports.plugin = {
                         Validate.assert(auditLog, Schemas.mutationSchema);
 
                         auditLog = createMutation({
-                            entity: settings.getEntity(pathname),
+                            entity: settings.setEntity(pathname),
                             entityId: Utils.getId(null, data),
                             newValues: data,
                             ...auditLog,

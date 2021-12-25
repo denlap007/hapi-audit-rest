@@ -15,7 +15,7 @@ const eventHandler =
     };
 const diff = () => (left, right) => [left, right];
 
-const getEntity = () => (path) => path;
+const setEntity = () => (path) => path;
 
 export default {
     baseSchema: Validate.object({
@@ -32,7 +32,7 @@ export default {
             .default(constants.FIFTEEN_MINS_MSECS),
         isAuditable: Validate.func().arity(1).default(isAuditable),
         eventHandler: Validate.func().arity(1).default(eventHandler),
-        getEntity: Validate.func().arity(1).default(getEntity),
+        setEntity: Validate.func().arity(1).default(setEntity),
         isEnabled: Validate.boolean().default(true),
         extAll: Validate.func(),
     }),

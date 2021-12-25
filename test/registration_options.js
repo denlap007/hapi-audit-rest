@@ -35,7 +35,7 @@ describe("Registration settings", () => {
             options: {
                 eventHandler: (data) => {},
                 isCacheEnabled: false,
-                getEntity: (path) => path.split("/")[2],
+                setEntity: (path) => path.split("/")[2],
             },
         });
 
@@ -88,7 +88,7 @@ describe("Registration settings", () => {
                 // override default so that audit logs are not printed
                 eventHandler: (data) => {},
                 clientId,
-                getEntity: (path) => path.split("/")[2],
+                setEntity: (path) => path.split("/")[2],
             },
         });
 
@@ -138,7 +138,7 @@ describe("Registration settings", () => {
             options: {
                 debug: true,
                 eventHandler: (data) => {},
-                getEntity: (path) => {
+                setEntity: (path) => {
                     throw new Error("custom test error");
                 },
             },
@@ -165,7 +165,7 @@ describe("Registration settings", () => {
         expect(loggedErr).to.include("custom test error");
     });
 
-    it("propagates the path as entity if getEntity function is not provided", async () => {
+    it("propagates the path as entity if setEntity function is not provided", async () => {
         await server.register({
             plugin,
             options: {
@@ -205,13 +205,13 @@ describe("Registration settings", () => {
         });
     });
 
-    it("propagates correctly the entity if a getEntity function is provided", async () => {
+    it("propagates correctly the entity if a setEntity function is provided", async () => {
         await server.register({
             plugin,
             options: {
                 // override default so that audit logs are not printed
                 eventHandler: (data) => {},
-                getEntity: (path) => "entity-from-provided-getEntity",
+                setEntity: (path) => "entity-from-provided-setEntity",
             },
         });
 
@@ -236,7 +236,7 @@ describe("Registration settings", () => {
             application: "my-app",
             type: "SEARCH",
             body: {
-                entity: "entity-from-provided-getEntity",
+                entity: "entity-from-provided-setEntity",
                 entityId: null,
                 action: "SEARCH",
                 username: null,
@@ -254,7 +254,7 @@ describe("Registration settings", () => {
             plugin,
             options: {
                 isEnabled: false,
-                getEntity: (path) => path.split("/")[2],
+                setEntity: (path) => path.split("/")[2],
             },
         });
 
@@ -289,7 +289,7 @@ describe("Registration settings", () => {
                 // override default so that audit logs are not printed
                 eventHandler: (data) => {},
                 cacheExpiresIn: 60000,
-                getEntity: (path) => path.split("/")[2],
+                setEntity: (path) => path.split("/")[2],
             },
         });
 
@@ -388,7 +388,7 @@ describe("Registration settings", () => {
                         outcome: "custom-outcome",
                     };
                 },
-                getEntity: (path) => path.split("/")[2],
+                setEntity: (path) => path.split("/")[2],
             },
         });
 

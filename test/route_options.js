@@ -32,7 +32,7 @@ describe("Route settings", () => {
             plugin,
             options: {
                 eventHandler: ({ auditLog, endpoint }) => {},
-                getEntity: (path) => path.split("/")[2],
+                setEntity: (path) => path.split("/")[2],
             },
         });
 
@@ -90,7 +90,7 @@ describe("Route settings", () => {
             plugin,
             options: {
                 eventHandler: ({ auditLog, endpoint }) => {},
-                getEntity: (path) => path.split("/")[2],
+                setEntity: (path) => path.split("/")[2],
             },
         });
 
@@ -163,7 +163,7 @@ describe("Route settings", () => {
             plugin,
             options: {
                 eventHandler: ({ auditLog, endpoint }) => {},
-                getEntity: (path) => path.split("/")[2],
+                setEntity: (path) => path.split("/")[2],
             },
         });
 
@@ -221,7 +221,7 @@ describe("Route settings", () => {
             plugin,
             options: {
                 eventHandler: ({ auditLog, endpoint }) => {},
-                getEntity: (path) => path.split("/")[2],
+                setEntity: (path) => path.split("/")[2],
             },
         });
 
@@ -280,7 +280,7 @@ describe("Route settings", () => {
             plugin,
             options: {
                 eventHandler: ({ auditLog, endpoint }) => {},
-                getEntity: (path) => path.split("/")[2],
+                setEntity: (path) => path.split("/")[2],
             },
         });
 
@@ -346,7 +346,7 @@ describe("Route settings", () => {
         await server.register({
             plugin,
             options: {
-                getEntity: (path) => path.split("/")[2],
+                setEntity: (path) => path.split("/")[2],
             },
         });
 
@@ -382,7 +382,7 @@ describe("Route settings", () => {
         await server.register({
             plugin,
             options: {
-                getEntity: (path) => path.split("/")[2],
+                setEntity: (path) => path.split("/")[2],
             },
         });
 
