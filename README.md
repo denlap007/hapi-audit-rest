@@ -230,7 +230,7 @@ await server.register({
 | cacheExpiresIn     | `Number Positive Integer` | 900000 (15mins) | no                                                                                 | Time (_msecs_) until cache expires (when _cacheEnabled = false_). Minimum 60000 (1 minute).                                                                                                                                                                                                            |
 | isAuditable        | `Function`                | _provided_      | no                                                                                 | Checks if current request is auditable. **The default** implementation audits all requests.<br><br>_Signature<br> `function (request) {return Boolean}`_                                                                                                                             |
 | `eventHandler`     | `Function`                | _provided_      | no                                                                                 | Handler for the emitted events. **The default** implementations prints the audit log to stdout. You will have to implement this function in order to do something with the audit log.<br><br>_Signature<br> `function ({ auditLog, routeEndpoint })`_                                                  |
-| getEntity          | `Function`                | _provided_      | no                                                                                 | Creates the entity name of the audit log. **The default** implementation `returns` the endpoint path.<br><br>_Signature<br> `function (path) {return String}`_                                                                                                           |
+| setEntity          | `Function`                | _provided_      | no                                                                                 | Creates the entity name of the audit log. **The default** implementation `returns` the endpoint path.<br><br>_Signature<br> `function (path) {return String}`_                                                                                                           |
 | isEnabled | `Boolean`  | true   | no        | Enable/Disable plugin initialization and functionality. |
 | extAll | `Function`  | -   | no        | <a name="extAll"></a>A global override entrypoint to extend any value of any created audit log document. |
 
@@ -289,7 +289,7 @@ An _action_ audit log document is created, on pre-response lifecycle if the requ
     application: "my-app",		// or the clientId if specified
     type: "SEARCH",
     body: {
-        entity: $,				// as specified by getEntity function
+        entity: $,				// as specified by setEntity function
         entityId: null,
         action: "SEARCH",
         username: null,			// or the username if authenticated
@@ -309,7 +309,7 @@ An _action_ audit log document is created, on pre-response lifecycle if the requ
     application: "my-app",		// or the clientId if specified
     type: "SEARCH",
     body: {
-        entity: $,				// as specified by getEntity function
+        entity: $,				// as specified by setEntity function
         entityId: request.params.id,
         action: "SEARCH",
         username: null,			// or the username if authenticated
@@ -333,7 +333,7 @@ A _mutation_ audit log document is created on pre-response lifecycle if the requ
     application: "my-app",		// or the clientId if specified
     type: "MUTATION",
     body: {
-        entity: $,				// as specified by getEntity function
+        entity: $,				// as specified by setEntity function
         entityId: request.response.source.id || request.payload.id,
         action: "CREATE",
         username: null,			// or the username if authenticated
@@ -356,7 +356,7 @@ In cases that it is not meaningful to audit a mutation, an _action_ audit log do
     application: "my-app",		// or the clientId if specified
     type: "SEARCH",
     body: {
-        entity: $,				// as specified by getEntity function
+        entity: $,				// as specified by setEntity function
         entityId: request.params.id || request.payload.id,
         action: "SEARCH",
         username: null,			// or the username if authenticated
@@ -378,7 +378,7 @@ A _mutation_ audit log document is created on pre-response lifecycle if the requ
     application: "my-app",		// or the clientId if specified
     type: "MUTATION",
     body: {
-        entity: $,				// as specified by getEntity function
+        entity: $,				// as specified by setEntity function
         entityId: request.params.id || newValues.id,	// where newValues is either the request payload (default) or the resource data fetched after update when fetchNewValues=true or request streamed
         action: "UPDATE",
         username: null,			// or the username if authenticated
@@ -404,7 +404,7 @@ In cases that it is not meaningful to audit a mutation, an _action_ audit log do
     application: "my-app",		// or the clientId if specified
     type: "SEARCH",
     body: {
-        entity: $,				// as specified by getEntity function
+        entity: $,				// as specified by setEntity function
         entityId: request.params.id || request.payload.id,
         action: "SEARCH",
         username: null,			// or the username if authenticated
@@ -426,7 +426,7 @@ A _mutation_ audit log document is created on pre-response lifecycle if the requ
     application: "my-app",		// or the clientId if specified
     type: "MUTATION",
     body: {
-        entity: $,				// as specified by getEntity function
+        entity: $,				// as specified by setEntity function
         entityId: request.params.id || originalValues.id,	// where originalValues = resource state before delete
         action: "DELETE",
         username: null,			// or the username if authenticated
@@ -450,7 +450,7 @@ In cases that it is not meaningful to audit a mutation, an _action_ audit log do
     application: "my-app",		// or the clientId if specified
     type: "SEARCH",
     body: {
-        entity: $,				// as specified by getEntity function
+        entity: $,				// as specified by setEntity function
         entityId: request.params.id || request.payload.id,
         action: "SEARCH",
         username: null,			// or the username if authenticated
