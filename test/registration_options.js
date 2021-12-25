@@ -6,6 +6,8 @@ const plugin = require("../lib/index");
 
 const { describe, it, before, after, afterEach, beforeEach } = (exports.lab = Lab.script());
 
+const internals = {};
+
 describe("Registration settings", () => {
     let server = null;
     let auditError = null;
@@ -31,9 +33,9 @@ describe("Registration settings", () => {
         await server.register({
             plugin,
             options: {
-                // override default so that audit logs are not printed
                 eventHandler: (data) => {},
                 cacheEnabled: false,
+                getEntity: (path) => path.split("/")[2],
             },
         });
 
@@ -86,6 +88,7 @@ describe("Registration settings", () => {
                 // override default so that audit logs are not printed
                 eventHandler: (data) => {},
                 clientId,
+                getEntity: (path) => path.split("/")[2],
             },
         });
 
@@ -121,39 +124,6 @@ describe("Registration settings", () => {
         });
     });
 
-    it("throws when getEntity is not overriden and route does not start with /api", async () => {
-        await server.register({
-            plugin,
-            options: {
-                debug: false,
-                // override default so that audit logs are not printed
-                eventHandler: (data) => {},
-                isAuditable: (path, method) => true,
-            },
-        });
-
-        server.events.on("hapi-audit-rest", ({ auditLog }) => {
-            auditEvent = auditLog;
-        });
-
-        server.route({
-            method: "GET",
-            path: "/test/{id}",
-            handler: (request, h) => "OK",
-        });
-
-        const res = await server.inject({
-            method: "get",
-            url: "/test/5",
-        });
-
-        expect(res.statusCode).to.equal(200);
-        expect(auditError.data).to.equal(
-            "[getEntity] ERROR: Could not extract entity for path: /test/5"
-        );
-        expect(auditEvent).to.be.null();
-    });
-
     it("throws and logs error to stderr", async () => {
         let loggedErr = null;
 
@@ -168,7 +138,9 @@ describe("Registration settings", () => {
             options: {
                 debug: true,
                 eventHandler: (data) => {},
-                isAuditable: (path, method) => true,
+                getEntity: (path) => {
+                    throw new Error("custom test error");
+                },
             },
         });
 
@@ -188,13 +160,49 @@ describe("Registration settings", () => {
         });
 
         expect(res.statusCode).to.equal(200);
-        expect(auditError.data).to.equal(
-            "[getEntity] ERROR: Could not extract entity for path: /test/5"
-        );
+        expect(auditError.data).to.equal("custom test error");
         expect(auditEvent).to.be.null();
-        expect(loggedErr).to.include(
-            "[getEntity] ERROR: Could not extract entity for path: /test/5"
-        );
+        expect(loggedErr).to.include("custom test error");
+    });
+
+    it("propagates the path as entity if getEntity function is not provided", async () => {
+        await server.register({
+            plugin,
+            options: {
+                eventHandler: (data) => {},
+            },
+        });
+
+        server.events.on("hapi-audit-rest", ({ auditLog }) => {
+            auditEvent = auditLog;
+        });
+
+        server.route({
+            method: "GET",
+            path: "/api/test/custom",
+            handler: (request, h) => "OK",
+        });
+
+        const res = await server.inject({
+            method: "get",
+            url: "/api/test/custom",
+        });
+
+        expect(res.statusCode).to.equal(200);
+        expect(auditError).to.be.null();
+        expect(auditEvent).to.equal({
+            application: "my-app",
+            type: "SEARCH",
+            body: {
+                entity: "/api/test/custom",
+                entityId: null,
+                action: "SEARCH",
+                username: null,
+                data: {},
+                timestamp: auditEvent.body.timestamp,
+            },
+            outcome: "Success",
+        });
     });
 
     it("propagates correctly the entity if a getEntity function is provided", async () => {
@@ -246,6 +254,7 @@ describe("Registration settings", () => {
             plugin,
             options: {
                 isEnabled: false,
+                getEntity: (path) => path.split("/")[2],
             },
         });
 
@@ -280,6 +289,7 @@ describe("Registration settings", () => {
     //             // override default so that audit logs are not printed
     //             eventHandler: (data) => {},
     //             cacheExpiresIn: 60000,
+    //             getEntity: (path) => path.split("/")[2],
     //         },
     //     });
 
@@ -378,6 +388,7 @@ describe("Registration settings", () => {
                         outcome: "custom-outcome",
                     };
                 },
+                getEntity: (path) => path.split("/")[2],
             },
         });
 

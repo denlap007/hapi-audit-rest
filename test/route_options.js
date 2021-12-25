@@ -32,6 +32,7 @@ describe("Route settings", () => {
             plugin,
             options: {
                 eventHandler: ({ auditLog, endpoint }) => {},
+                getEntity: (path) => path.split("/")[2],
             },
         });
 
@@ -89,6 +90,7 @@ describe("Route settings", () => {
             plugin,
             options: {
                 eventHandler: ({ auditLog, endpoint }) => {},
+                getEntity: (path) => path.split("/")[2],
             },
         });
 
@@ -161,6 +163,7 @@ describe("Route settings", () => {
             plugin,
             options: {
                 eventHandler: ({ auditLog, endpoint }) => {},
+                getEntity: (path) => path.split("/")[2],
             },
         });
 
@@ -218,6 +221,7 @@ describe("Route settings", () => {
             plugin,
             options: {
                 eventHandler: ({ auditLog, endpoint }) => {},
+                getEntity: (path) => path.split("/")[2],
             },
         });
 
@@ -276,6 +280,7 @@ describe("Route settings", () => {
             plugin,
             options: {
                 eventHandler: ({ auditLog, endpoint }) => {},
+                getEntity: (path) => path.split("/")[2],
             },
         });
 
@@ -340,6 +345,9 @@ describe("Route settings", () => {
     it("validates route options", async () => {
         await server.register({
             plugin,
+            options: {
+                getEntity: (path) => path.split("/")[2],
+            },
         });
 
         server.events.on("hapi-audit-rest", ({ auditLog }) => {
@@ -373,6 +381,9 @@ describe("Route settings", () => {
     it("does not emit an audit record when disabled on route", async () => {
         await server.register({
             plugin,
+            options: {
+                getEntity: (path) => path.split("/")[2],
+            },
         });
 
         server.events.on("hapi-audit-rest", ({ auditLog }) => {

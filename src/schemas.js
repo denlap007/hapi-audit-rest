@@ -7,7 +7,7 @@ const constants = {
     DEFAULT_SOURCE_ID: "id",
 };
 
-const isAuditable = () => (path, method) => path.startsWith("/api");
+const isAuditable = () => () => true;
 const eventHandler =
     () =>
     ({ auditLog, endpoint }) => {
@@ -15,19 +15,7 @@ const eventHandler =
     };
 const diff = () => (left, right) => [left, right];
 
-const getEntity = () => (path) => {
-    let entity = "";
-
-    if (path.startsWith("/api")) {
-        entity = path.split("/")[2];
-    }
-
-    if (!entity) {
-        throw new Error(`[getEntity] ERROR: Could not extract entity for path: ${path}`);
-    }
-
-    return entity;
-};
+const getEntity = () => (path) => path;
 
 export default {
     baseSchema: Validate.object({
@@ -42,7 +30,7 @@ export default {
             .positive()
             .min(constants.ONE_MIN_MSECS)
             .default(constants.FIFTEEN_MINS_MSECS),
-        isAuditable: Validate.func().arity(2).default(isAuditable),
+        isAuditable: Validate.func().arity(1).default(isAuditable),
         eventHandler: Validate.func().arity(1).default(eventHandler),
         getEntity: Validate.func().arity(1).default(getEntity),
         isEnabled: Validate.boolean().default(true),

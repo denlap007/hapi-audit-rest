@@ -80,7 +80,7 @@ Consider a CRUD API on users.
     application: "my-app",
     type: "SEARCH",
     body: {
-        entity: "users",
+        entity: "/api/users",
         entityId: null,
         action: "SEARCH",
         username: null, // or the username if authenticated
@@ -100,7 +100,7 @@ Consider a CRUD API on users.
     application: "my-app",
     type: "SEARCH",
     body: {
-        entity: "users",
+        entity: "/api/users/1",
         entityId: "1",
         action: "SEARCH",
         username: null, // or the username if authenticated
@@ -126,7 +126,7 @@ const user = {
     application: "my-app",
     type: "MUTATION",
     body: {
-        entity: "users",
+        entity: "/api/users",
         entityId: 1,
         action: "CREATE",
         username: null, // or the username if authenticated
@@ -151,7 +151,7 @@ const user = {
     application: "my-app",
     type: "MUTATION",
     body: {
-        entity: "users",
+        entity: "/api/users/1",
         entityId: 1,
         action: "DELETE",
         username: null, // or the username if authenticated
@@ -180,7 +180,7 @@ const user = {
     application: "my-app",
     type: "MUTATION",
     body: {
-        entity: "users",
+        entity: "/api/users/1",
         entityId: 1,
         action: "UPDATE",
         username: null, // or the username if authenticated
@@ -220,9 +220,9 @@ await server.register({
 | clientId           | `String`                  | my-app          | no                                                                                 | Application instance name or auth client id.                                                                                                                                                                                                                                                           |
 | usernameKey        | `String`                  |                 | yes <span style="font-size:0.8em;">(when auditAuthOnly enabled)</span> <br>else no | The path/key to the username stored in _request.auth.credentials_ object.                                                                                                                                                                                                                              |
 | cacheExpiresIn     | `Number Positive Integer` | 900000 (15mins) | no                                                                                 | Time (_msecs_) until cache expires (when _cacheEnabled = false_). Minimum 60000 (1 minute).                                                                                                                                                                                                            |
-| isAuditable        | `Function`                | _provided_      | no                                                                                 | Checks if current path is auditable. **The default** implementation checks if **path starts with /api**.<br><br>_Signature<br> `function (path, method) {return Boolean}`_                                                                                                                             |
+| isAuditable        | `Function`                | _provided_      | no                                                                                 | Checks if current request is auditable. **The default** implementation audits all requests.<br><br>_Signature<br> `function (request) {return Boolean}`_                                                                                                                             |
 | `eventHandler`     | `Function`                | _provided_      | no                                                                                 | Handler for the emitted events. **The default** implementations prints the audit log to stdout. You will have to implement this function in order to do something with the audit log.<br><br>_Signature<br> `function ({ auditLog, routeEndpoint })`_                                                  |
-| getEntity          | `Function`                | _provided_      | no                                                                                 | Creates the entity name of the audit log. **The default** implementation `returns` the string after /api/ and before next / if any.<br><br>_Signature<br> `function (path) {return String}`_                                                                                                           |
+| getEntity          | `Function`                | _provided_      | no                                                                                 | Creates the entity name of the audit log. **The default** implementation `returns` the endpoint path.<br><br>_Signature<br> `function (path) {return String}`_                                                                                                           |
 | isEnabled | `Boolean`  | true   | no        | Enable/Disable plugin initialization and functionality. |
 | extAll | `Function`  | -   | no        | A global override entrypoint to extend any value of any created audit log document. |
 
@@ -266,7 +266,7 @@ To effectively track old and new state of a resource, the plugin implements inte
 | ----------- | ---------- | -------------------------------------- |
 | GET         | collection | Retrieve all resources in a collection |
 | GET         | resource   | Retrieve a single resource             |
-| POST        | collection | Create a new resource in a collection  |
+| POST        | resource   | Create a new resource in a collection  |
 | PUT         | resource   | Update a resource                      |
 | DELETE      | resource   | Delete a resource                      |
 

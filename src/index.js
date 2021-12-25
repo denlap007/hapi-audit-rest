@@ -89,7 +89,7 @@ exports.plugin = {
                  */
                 if (
                     !Utils.isEnabled(routeOptions) ||
-                    !settings.isAuditable(pathname, method) ||
+                    !settings.isAuditable(request) ||
                     routeOptions.isAction ||
                     Utils.isRead(method)
                 ) {
@@ -142,7 +142,7 @@ exports.plugin = {
                  */
                 if (
                     !Utils.isEnabled(routeOptions) ||
-                    !settings.isAuditable(pathname, method) ||
+                    !settings.isAuditable(request) ||
                     !Utils.isSuccess(statusCode) ||
                     !!injected
                 ) {
