@@ -4,7 +4,9 @@ import AuditAction from "./dtos/AuditAction";
 import AuditMutation from "./dtos/AuditMutation";
 
 const isObject = (val) => typeof val === "object" && val !== null;
+
 const ONE_MINUTE_MSECS = 60 * 1000;
+const DEFAULT_ID = "id";
 
 export default {
     clone: (obj) => JSON.parse(JSON.stringify(obj)),
@@ -42,8 +44,6 @@ export default {
                 action,
             }),
     gotResponseData: (data) => data != null,
-    isGetRequestAuditable: (method, auditGetRequests, injected) =>
-        method === "get" ? injected == null && auditGetRequests : true,
     removeProps: (left, right, props) => {
         if (Array.isArray(props) && isObject(left) && isObject(right)) {
             props.forEach((key) => {
@@ -70,7 +70,6 @@ export default {
     },
     getId: (params, payload) => {
         const data = params || payload || {};
-        const DEFAULT_ID = "id";
 
         return data[DEFAULT_ID];
     },

@@ -8,9 +8,11 @@ const constants = {
 };
 
 const isAuditable = () => (path, method) => path.startsWith("/api");
-const eventHandler = () => ({ auditLog, endpoint }) => {
-    console.log(`Audit Log Record for: ${endpoint}\n`, JSON.stringify(auditLog, null, 4));
-};
+const eventHandler =
+    () =>
+    ({ auditLog, endpoint }) => {
+        console.log(`Audit Log Record for: ${endpoint}\n`, JSON.stringify(auditLog, null, 4));
+    };
 const diff = () => (left, right) => [left, right];
 
 const getEntity = () => (path) => {
@@ -34,12 +36,7 @@ export default {
         diffFunc: Validate.func().arity(2).default(diff),
         cacheEnabled: Validate.boolean().default(true),
         clientId: Validate.string().default(constants.DERAULT_CLIENT_ID),
-        auditAuthOnly: Validate.boolean().default(false),
-        usernameKey: Validate.string().when("auditAuthOnly", {
-            is: true,
-            then: Validate.string().required(),
-            otherwise: Validate.any(),
-        }),
+        usernameKey: Validate.string(),
         cacheExpiresIn: Validate.number()
             .integer()
             .positive()
