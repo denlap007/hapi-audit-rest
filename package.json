@@ -1,6 +1,6 @@
 {
   "name": "hapi-audit-rest",
-  "version": "3.5.2",
+  "version": "4.0.0",
   "description": "A NPM package to audit rest API calls on a Hapi.js server",
   "main": "lib/index.js",
   "files": [
@@ -8,7 +8,7 @@
     "lib/"
   ],
   "engines": {
-    "node": ">=12.0.0"
+    "node": ">=14.0.0"
   },
   "scripts": {
     "build": "node_modules/.bin/babel ./src -d ./lib",
@@ -44,8 +44,8 @@
   "homepage": "https://github.com/denlap007/hapi-audit-rest#readme",
   "devDependencies": {
     "@babel/cli": "^7.16.0",
-    "@babel/core": "^7.16.0",
-    "@babel/preset-env": "^7.16.4",
+    "@babel/core": "^7.16.5",
+    "@babel/preset-env": "^7.16.5",
     "@hapi/code": "^8.0.5",
     "@hapi/h2o2": "^9.1.0",
     "@hapi/hapi": "^20.2.1",

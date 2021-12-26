@@ -32,6 +32,7 @@ describe("Route settings", () => {
             plugin,
             options: {
                 eventHandler: ({ auditLog, endpoint }) => {},
+                setEntity: (path) => path.split("/")[2],
             },
         });
 
@@ -89,6 +90,7 @@ describe("Route settings", () => {
             plugin,
             options: {
                 eventHandler: ({ auditLog, endpoint }) => {},
+                setEntity: (path) => path.split("/")[2],
             },
         });
 
@@ -161,6 +163,7 @@ describe("Route settings", () => {
             plugin,
             options: {
                 eventHandler: ({ auditLog, endpoint }) => {},
+                setEntity: (path) => path.split("/")[2],
             },
         });
 
@@ -213,11 +216,12 @@ describe("Route settings", () => {
         });
     });
 
-    it("overrides the default endpoint to get values before update when getPath function is provided", async () => {
+    it("overrides the default endpoint to get values before update when setInjectedPath function is provided", async () => {
         await server.register({
             plugin,
             options: {
                 eventHandler: ({ auditLog, endpoint }) => {},
+                setEntity: (path) => path.split("/")[2],
             },
         });
 
@@ -241,7 +245,7 @@ describe("Route settings", () => {
             options: {
                 plugins: {
                     "hapi-audit-rest": {
-                        getPath: ({ query, params }) => `/api/different/${params.id}`,
+                        setInjectedPath: ({ query, params }) => `/api/different/${params.id}`,
                     },
                 },
             },
@@ -276,6 +280,7 @@ describe("Route settings", () => {
             plugin,
             options: {
                 eventHandler: ({ auditLog, endpoint }) => {},
+                setEntity: (path) => path.split("/")[2],
             },
         });
 
@@ -340,6 +345,9 @@ describe("Route settings", () => {
     it("validates route options", async () => {
         await server.register({
             plugin,
+            options: {
+                setEntity: (path) => path.split("/")[2],
+            },
         });
 
         server.events.on("hapi-audit-rest", ({ auditLog }) => {
@@ -355,7 +363,7 @@ describe("Route settings", () => {
                     "hapi-audit-rest": {
                         ext: async () => {},
                         isAction: true,
-                        getPath: () => {},
+                        setInjectedPath: () => {},
                         fetchNewValues: true,
                     },
                 },
@@ -373,6 +381,9 @@ describe("Route settings", () => {
     it("does not emit an audit record when disabled on route", async () => {
         await server.register({
             plugin,
+            options: {
+                setEntity: (path) => path.split("/")[2],
+            },
         });
 
         server.events.on("hapi-audit-rest", ({ auditLog }) => {

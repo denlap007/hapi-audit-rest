@@ -11,7 +11,7 @@ internals.pluginName = "hapi-audit-rest";
 internals.schema = Schemas.baseSchema;
 
 internals.handleError = (settings, request, error) => {
-    if (settings.showErrorsOnStdErr) {
+    if (settings.debug) {
         console.error(`[${internals.pluginName}]`, error);
     }
     request.log(["error", internals.pluginName], error.message);
@@ -84,28 +84,27 @@ exports.plugin = {
                 } = request;
 
                 /**
-                 * skip audit if disabled on route, not authenticated and auditAuthOnly enabled, path does not match criteria
-                 * if this will be handled as a custom action skip to process on preResponse, is GET request go on preResponse
+                 * skip pre-handler if disabled on route, is GET request, request not auditable
+                 * if this will be handled as a custom action skip to process on preResponse
                  */
                 if (
                     !Utils.isEnabled(routeOptions) ||
-                    (settings.auditAuthOnly && !request.auth.isAuthenticated) ||
-                    !settings.isAuditable(pathname, method) ||
-                    routeOptions.isAction ||
-                    Utils.isRead(method)
+                    Utils.isRead(method) ||
+                    !settings.isAuditable(request) ||
+                    routeOptions.isAction
                 ) {
                     return h.continue;
                 }
 
                 // Ovveride, creates GET endpoint
                 const pathOverride = Validate.attempt(
-                    routeOptions.getPath?.(request),
+                    routeOptions.setInjectedPath?.(request),
                     Schemas.getRoutePath
                 );
                 const getEndpoint = Utils.toEndpoint("get", pathname, pathOverride);
 
                 if (Utils.isUpdate(method)) {
-                    let oldVals = settings.cacheEnabled ? oldValsCache.get(getEndpoint) : null;
+                    let oldVals = settings.isCacheEnabled ? oldValsCache.get(getEndpoint) : null;
 
                     if (oldVals == null) {
                         oldVals = await internals.fetchValues(request, pathOverride);
@@ -137,22 +136,19 @@ exports.plugin = {
                     response: { source: resp, statusCode },
                 } = request;
                 const { injected } = headers;
-                /**
-                 * skip audit IF disabled on route, not authenticated and auditAuthOnly enabled, path does not match criteria,
-                 * call failed, is GET request and disabled, is injected GET request
-                 */
+
+                // skip audit IF disabled on route, request not auditable, call failed, is injected GET request
                 if (
                     !Utils.isEnabled(routeOptions) ||
-                    (settings.auditAuthOnly && !request.auth.isAuthenticated) ||
-                    !settings.isAuditable(pathname, method) ||
+                    !settings.isAuditable(request) ||
                     !Utils.isSuccess(statusCode) ||
-                    !Utils.isGetRequestAuditable(method, settings.auditGetRequests, injected)
+                    !!injected
                 ) {
                     return h.continue;
                 }
 
                 const pathOverride = Validate.attempt(
-                    routeOptions.getPath?.(request),
+                    routeOptions.setInjectedPath?.(request),
                     Schemas.getRoutePath
                 );
                 const createMutation = Utils.initMutation({
@@ -175,12 +171,12 @@ exports.plugin = {
                     const entityId = auditLog?.entityId || Utils.getId(params);
 
                     // cache only GET by id response
-                    if (settings.cacheEnabled && !Utils.isStream(resp) && !!entityId) {
+                    if (settings.isCacheEnabled && !Utils.isStream(resp) && !!entityId) {
                         oldValsCache.set(getEndpoint, resp);
                     }
 
                     auditLog = createAction({
-                        entity: settings.getEntity(pathname),
+                        entity: settings.setEntity(pathname),
                         entityId,
                         data: query,
                         ...auditLog,
@@ -197,7 +193,7 @@ exports.plugin = {
                     }
 
                     auditLog = createAction({
-                        entity: settings.getEntity(pathname),
+                        entity: settings.setEntity(pathname),
                         entityId: Utils.isStream(reqPayload)
                             ? Utils.getId(params)
                             : Utils.getId(params, reqPayload),
@@ -228,7 +224,7 @@ exports.plugin = {
                     const [originalValues, newValues] = settings.diffFunc(oldVals, newVals);
 
                     auditLog = createMutation({
-                        entity: settings.getEntity(pathname),
+                        entity: settings.setEntity(pathname),
                         entityId: Utils.getId(params, newVals),
                         originalValues,
                         newValues,
@@ -243,7 +239,7 @@ exports.plugin = {
                     Validate.assert(auditLog, Schemas.mutationSchema);
 
                     auditLog = createMutation({
-                        entity: settings.getEntity(pathname),
+                        entity: settings.setEntity(pathname),
                         entityId: Utils.getId(params, oldVals),
                         originalValues: oldVals,
                         ...auditLog,
@@ -256,7 +252,7 @@ exports.plugin = {
                         Validate.assert(auditLog, Schemas.mutationSchema);
 
                         auditLog = createMutation({
-                            entity: settings.getEntity(pathname),
+                            entity: settings.setEntity(pathname),
                             entityId: Utils.getId(null, data),
                             newValues: data,
                             ...auditLog,

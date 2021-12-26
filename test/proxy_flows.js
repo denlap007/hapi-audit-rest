@@ -47,7 +47,8 @@ describe("PROXY flows with default settings", () => {
                 options: {
                     usernameKey: "userName",
                     eventHandler: ({ auditLog, endpoint }) => {},
-                    showErrorsOnStdErr: false,
+                    debug: false,
+                    setEntity: (path) => path.split("/")[2],
                 },
             },
             h2o2,

@@ -6,6 +6,8 @@ const plugin = require("../lib/index");
 
 const { describe, it, before, after, afterEach, beforeEach } = (exports.lab = Lab.script());
 
+const internals = {};
+
 describe("Registration settings", () => {
     let server = null;
     let auditError = null;
@@ -27,69 +29,13 @@ describe("Registration settings", () => {
         await server.stop();
     });
 
-    it("does not audit GET requests when auditGetRequests disabled", async () => {
-        await server.register({
-            plugin,
-            options: {
-                auditGetRequests: false,
-            },
-        });
-
-        server.events.on("hapi-audit-rest", ({ auditLog }) => {
-            auditEvent = auditLog;
-        });
-
-        server.route({
-            method: "GET",
-            path: "/api/test",
-            handler: (request, h) => "OK",
-        });
-
-        const res = await server.inject({
-            method: "get",
-            url: "/api/test",
-        });
-
-        expect(res.statusCode).to.equal(200);
-        expect(auditError).to.be.null();
-        expect(auditEvent).be.null();
-    });
-
-    it("does not audit requests when auditable returns false", async () => {
-        await server.register({
-            plugin,
-            options: {
-                isAuditable: (path, method) => false,
-            },
-        });
-
-        server.events.on("hapi-audit-rest", ({ auditLog }) => {
-            auditEvent = auditLog;
-        });
-
-        server.route({
-            method: "GET",
-            path: "/api/test",
-            handler: (request, h) => "OK",
-        });
-
-        const res = await server.inject({
-            method: "get",
-            url: "/api/test",
-        });
-
-        expect(res.statusCode).to.equal(200);
-        expect(auditError).to.be.null();
-        expect(auditEvent).be.null();
-    });
-
     it("does not use internal cache to fetch old values when disabled", async (flags) => {
         await server.register({
             plugin,
             options: {
-                // override default so that audit logs are not printed
                 eventHandler: (data) => {},
-                cacheEnabled: false,
+                isCacheEnabled: false,
+                setEntity: (path) => path.split("/")[2],
             },
         });
 
@@ -142,6 +88,7 @@ describe("Registration settings", () => {
                 // override default so that audit logs are not printed
                 eventHandler: (data) => {},
                 clientId,
+                setEntity: (path) => path.split("/")[2],
             },
         });
 
@@ -177,39 +124,6 @@ describe("Registration settings", () => {
         });
     });
 
-    it("throws when getEntity is not overriden and route does not start with /api", async () => {
-        await server.register({
-            plugin,
-            options: {
-                showErrorsOnStdErr: false,
-                // override default so that audit logs are not printed
-                eventHandler: (data) => {},
-                isAuditable: (path, method) => true,
-            },
-        });
-
-        server.events.on("hapi-audit-rest", ({ auditLog }) => {
-            auditEvent = auditLog;
-        });
-
-        server.route({
-            method: "GET",
-            path: "/test/{id}",
-            handler: (request, h) => "OK",
-        });
-
-        const res = await server.inject({
-            method: "get",
-            url: "/test/5",
-        });
-
-        expect(res.statusCode).to.equal(200);
-        expect(auditError.data).to.equal(
-            "[getEntity] ERROR: Could not extract entity for path: /test/5"
-        );
-        expect(auditEvent).to.be.null();
-    });
-
     it("throws and logs error to stderr", async () => {
         let loggedErr = null;
 
@@ -222,10 +136,11 @@ describe("Registration settings", () => {
         await server.register({
             plugin,
             options: {
-                showErrorsOnStdErr: true,
-                // override default so that audit logs are not printed
+                debug: true,
                 eventHandler: (data) => {},
-                isAuditable: (path, method) => true,
+                setEntity: (path) => {
+                    throw new Error("custom test error");
+                },
             },
         });
 
@@ -245,38 +160,16 @@ describe("Registration settings", () => {
         });
 
         expect(res.statusCode).to.equal(200);
-        expect(auditError.data).to.equal(
-            "[getEntity] ERROR: Could not extract entity for path: /test/5"
-        );
+        expect(auditError.data).to.equal("custom test error");
         expect(auditEvent).to.be.null();
-        expect(loggedErr).to.include(
-            "[getEntity] ERROR: Could not extract entity for path: /test/5"
-        );
+        expect(loggedErr).to.include("custom test error");
     });
 
-    it("audits only authenticated requests when auditAuthOnly enabled", async () => {
-        server.auth.scheme("custom", (server, options) => {
-            const scheme = {
-                authenticate: (request, h) => {
-                    const credentials = {
-                        userName: "user",
-                    };
-                    return h.authenticated({ credentials });
-                },
-            };
-
-            return scheme;
-        });
-        server.auth.strategy("default", "custom", { name: "sid" });
-        server.auth.default("default");
-
+    it("propagates the path as entity if setEntity function is not provided", async () => {
         await server.register({
             plugin,
             options: {
-                // override default so that audit logs are not printed
                 eventHandler: (data) => {},
-                auditAuthOnly: true,
-                usernameKey: "userName",
             },
         });
 
@@ -284,47 +177,27 @@ describe("Registration settings", () => {
             auditEvent = auditLog;
         });
 
-        // no auth
         server.route({
             method: "GET",
-            path: "/api/no-auth",
+            path: "/api/test/custom",
             handler: (request, h) => "OK",
-            options: {
-                auth: false,
-            },
         });
 
         const res = await server.inject({
             method: "get",
-            url: "/api/no-auth",
+            url: "/api/test/custom",
         });
 
         expect(res.statusCode).to.equal(200);
-        expect(auditError).to.be.null();
-        expect(auditEvent).to.be.null();
-
-        // with auth
-        server.route({
-            method: "GET",
-            path: "/api/with-auth",
-            handler: (request, h) => "OK",
-        });
-
-        const authRes = await server.inject({
-            method: "get",
-            url: "/api/with-auth",
-        });
-
-        expect(authRes.statusCode).to.equal(200);
         expect(auditError).to.be.null();
         expect(auditEvent).to.equal({
             application: "my-app",
             type: "SEARCH",
             body: {
-                entity: "with-auth",
+                entity: "/api/test/custom",
                 entityId: null,
                 action: "SEARCH",
-                username: "user",
+                username: null,
                 data: {},
                 timestamp: auditEvent.body.timestamp,
             },
@@ -332,13 +205,13 @@ describe("Registration settings", () => {
         });
     });
 
-    it("propagates correctly the entity if a getEntity function is provided", async () => {
+    it("propagates correctly the entity if a setEntity function is provided", async () => {
         await server.register({
             plugin,
             options: {
                 // override default so that audit logs are not printed
                 eventHandler: (data) => {},
-                getEntity: (path) => "entity-from-provided-getEntity",
+                setEntity: (path) => "entity-from-provided-setEntity",
             },
         });
 
@@ -363,7 +236,7 @@ describe("Registration settings", () => {
             application: "my-app",
             type: "SEARCH",
             body: {
-                entity: "entity-from-provided-getEntity",
+                entity: "entity-from-provided-setEntity",
                 entityId: null,
                 action: "SEARCH",
                 username: null,
@@ -381,6 +254,7 @@ describe("Registration settings", () => {
             plugin,
             options: {
                 isEnabled: false,
+                setEntity: (path) => path.split("/")[2],
             },
         });
 
@@ -415,6 +289,7 @@ describe("Registration settings", () => {
                 // override default so that audit logs are not printed
                 eventHandler: (data) => {},
                 cacheExpiresIn: 60000,
+                setEntity: (path) => path.split("/")[2],
             },
         });
 
@@ -513,6 +388,7 @@ describe("Registration settings", () => {
                         outcome: "custom-outcome",
                     };
                 },
+                setEntity: (path) => path.split("/")[2],
             },
         });
 
@@ -546,5 +422,35 @@ describe("Registration settings", () => {
             },
             outcome: "custom-outcome",
         });
+    });
+
+    it("does not audit request if isAuditable returns false", async () => {
+        const routePath = "/api/test/custom";
+        await server.register({
+            plugin,
+            options: {
+                eventHandler: (data) => {},
+                isAuditable: ({ path }) => path !== routePath,
+            },
+        });
+
+        server.events.on("hapi-audit-rest", ({ auditLog }) => {
+            auditEvent = auditLog;
+        });
+
+        server.route({
+            method: "GET",
+            path: routePath,
+            handler: (request, h) => "OK",
+        });
+
+        const res = await server.inject({
+            method: "get",
+            url: routePath,
+        });
+
+        expect(res.statusCode).to.equal(200);
+        expect(auditError).to.be.null();
+        expect(auditEvent).to.be.null();
     });
 });
