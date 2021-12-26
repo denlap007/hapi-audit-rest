@@ -20,6 +20,7 @@ Small opinionated [Hapi.js] plugin that generates **audit logs** for **RESTful A
     - [PUT Requests](#put-requests)
   - [API](#api)
     - [Plugin registration options](#plugin-registration-options)
+      - [Handle common cases](#handle-common-cases)
     - [Plugin route options](#plugin-route-options)
       - [Disable plugin on route](#disable-plugin-on-route)
   - [Flows & Audit Log Data](#flows--audit-log-data)
@@ -323,6 +324,7 @@ To effectively track old and new state of a resource, the plugin implements inte
 To **override** audit log document defaults use the route [extension point](#ext). To completely override any created audit log document use the global override registration option [extend all](#extAll).
 
 #### GET - scope _collection_
+![get_collection_flow](https://user-images.githubusercontent.com/1659476/147410653-2b161ebe-eb7c-4b68-b21d-a2c055616feb.jpg)
 
 An _action_ audit log document is created, on pre-response lifecycle if the request succeeds with the following defaults:
 
@@ -343,6 +345,7 @@ An _action_ audit log document is created, on pre-response lifecycle if the requ
 ```
 
 #### GET - scope _resource_
+![get_resource_flow](https://user-images.githubusercontent.com/1659476/147410658-a9541e04-6484-415b-8517-44b006713737.jpg)
 
 An _action_ audit log document is created, on pre-response lifecycle if the request succeeds with the following defaults:
 
@@ -367,6 +370,7 @@ The response is _cached_ if cashing enabled.
 #### POST - scope _resource_
 
 ##### mutation (default)
+![post_resource_mutation_flow_2](https://user-images.githubusercontent.com/1659476/147410665-53885e0d-3163-4d85-83a3-9cde340683e0.jpg)
 
 A _mutation_ audit log document is created on pre-response lifecycle if the request succeeds with the following defaults:
 
@@ -390,6 +394,7 @@ A _mutation_ audit log document is created on pre-response lifecycle if the requ
 -   POST mutations rely to **request payload** or **response payload** to track the new resource state. If request is streamed to an upstream server this will result to an error.
 
 ##### action
+![post_put_delete_resource_action_flow_2](https://user-images.githubusercontent.com/1659476/147410682-2d4d7ae7-b15d-4ab9-8852-5a0ade8d8f52.jpg)
 
 In cases that it is not meaningful to audit a mutation, an _action_ audit log document can be created by setting [isAction](#is-action) route parameter.
 
@@ -412,6 +417,7 @@ In cases that it is not meaningful to audit a mutation, an _action_ audit log do
 #### PUT - scope resource
 
 ##### mutation (default)
+![put_resource_mutation_flow_2](https://user-images.githubusercontent.com/1659476/147410687-2b63d01d-0152-44e4-aafc-99bbf9417901.jpg)
 
 A _mutation_ audit log document is created on pre-response lifecycle if the request succeeds with the following defaults:
 
@@ -460,6 +466,7 @@ In cases that it is not meaningful to audit a mutation, an _action_ audit log do
 #### DELETE - scope resource
 
 ##### mutation (default)
+![delete_resource_mutation_flow](https://user-images.githubusercontent.com/1659476/147410981-a6c479af-8330-4799-ba31-6ec50aae2593.jpg)
 
 A _mutation_ audit log document is created on pre-response lifecycle if the request succeeds with the following defaults:
 
@@ -481,7 +488,6 @@ A _mutation_ audit log document is created on pre-response lifecycle if the requ
 ```
 
 DELETE mutations retrieve old resource state by injecting a GET by id request before the delete operation.
-
 
 ##### action
 
