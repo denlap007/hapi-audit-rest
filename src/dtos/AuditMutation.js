@@ -19,9 +19,9 @@ class AuditMutation {
         if (!action) {
             if (method === "put") {
                 httpAction = MUTATION_ACTION.MUTATION_UPDATE;
-            } else if (!action && method === "post") {
+            } else if (method === "post") {
                 httpAction = MUTATION_ACTION.MUTATION_CREATE;
-            } else if (!action && method === "delete") {
+            } else if (method === "delete") {
                 httpAction = MUTATION_ACTION.MUTATION_DELETE;
             }
         }
