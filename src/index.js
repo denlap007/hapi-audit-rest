@@ -136,10 +136,8 @@ exports.plugin = {
                     response: { source: resp, statusCode },
                 } = request;
                 const { injected } = headers;
-                /**
-                 * skip audit IF disabled on route, request not auditable,
-                 * call failed, is injected GET request
-                 */
+
+                // skip audit IF disabled on route, request not auditable, call failed, is injected GET request
                 if (
                     !Utils.isEnabled(routeOptions) ||
                     !settings.isAuditable(request) ||
