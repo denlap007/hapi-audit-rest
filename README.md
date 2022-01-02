@@ -13,6 +13,9 @@ Small opinionated [Hapi.js] plugin that generates **audit logs** for **RESTful A
   - [Testing](#testing)
   - [About](#about)
   - [Quickstart](#quickstart)
+  - [Audit Log Document Schemas](#audit-log-document-schemas)
+    - [Action Schema](#action-schema)
+    - [Mutation Schema](#mutation-schema)
   - [Example Audit Log Documents](#example-audit-log-documents)
     - [GET Requests](#get-requests)
     - [POST Requests](#post-requests)
@@ -75,6 +78,42 @@ For every request an **event** is emitted with an **audit log** document.
 await server.register({
     plugin: require("hapi-audit-rest"),
 });
+```
+
+## Audit Log Document Schemas
+
+### Action Schema
+```js
+{
+    application: String
+    type: String,
+    body: {
+        entity: String,
+        entityId: String|Number|Null,
+        action: String,
+        username: String|Null,
+        data: Object|Null,
+        timestamp: String,
+    },
+    outcome: String
+};
+```
+### Mutation Schema
+```js
+{
+    application: String
+    type: String,
+    body: {
+        entity: String,
+        entityId: String|Number|Null,
+        action: String,
+        username: String|Null,
+        originalValues: Object|Array|Null,
+        newValues: Object|Array|Null,
+        timestamp: String,
+    },
+    outcome: String
+};
 ```
 
 ## Example Audit Log Documents
@@ -233,7 +272,7 @@ await server.register({
 | `eventHandler`     | `Function`                | _provided_      | no                                                                                 | Handler for the emitted events. **The default** implementations prints the audit log to stdout. You will have to implement this function in order to do something with the audit log.<br><br>_Signature<br> `function ({ auditLog, routeEndpoint })`_                                                  |
 | setEntity          | `Function`                | _provided_      | no                                                                                 | Creates the entity name of the audit log. **The default** implementation `returns` the endpoint path.<br><br>_Signature<br> `function (path) {return String}`_                                                                                                           |
 | isEnabled | `Boolean`  | true   | no        | Enable/Disable plugin initialization and functionality. |
-| extAll | `Function`  | -   | no        | <a name="extAll"></a>A **global override** entrypoint to extend any value of any created audit log document, invoked on **pre-response**. <br><br>_Signature<br> `function (request, auditLog) {return <any type>}`_ |
+| extAll | `Function`  | -   | no        | <a name="extAll"></a>A **global override** entrypoint to extend any value of any created audit log document, invoked on **pre-response**. <br><br>_Signature<br> `function (request, auditLog) {return Object}`_ |
 
 #### Handle common cases
 Common use cases for **isAuditable** option:
