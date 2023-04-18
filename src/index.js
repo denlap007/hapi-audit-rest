@@ -91,7 +91,8 @@ exports.plugin = {
                     !Utils.isEnabled(routeOptions) ||
                     Utils.isRead(method) ||
                     !settings.isAuditable(request) ||
-                    routeOptions.isAction
+                    routeOptions.isAction ||
+                    !!(routeOptions.isAuditable != null && !routeOptions.isAuditable(request))
                 ) {
                     return h.continue;
                 }
@@ -142,7 +143,8 @@ exports.plugin = {
                     !Utils.isEnabled(routeOptions) ||
                     !settings.isAuditable(request) ||
                     !Utils.isSuccess(statusCode) ||
-                    !!injected
+                    !!injected ||
+                    !!(routeOptions.isAuditable != null && !routeOptions.isAuditable(request))
                 ) {
                     return h.continue;
                 }

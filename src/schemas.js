@@ -42,6 +42,7 @@ export default {
             isAction: Validate.boolean().default(false),
             setInjectedPath: Validate.func(),
             fetchNewValues: Validate.boolean().default(false),
+            isAuditable: Validate.func().arity(1).default(isAuditable),
         }),
         Validate.boolean()
     ),
