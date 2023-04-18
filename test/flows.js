@@ -858,4 +858,38 @@ describe("flows with default settings", () => {
             outcome: "Success",
         });
     });
+
+    it("emits a mutation audit record (POST) with the request payload as data when response status code is 204 and response data empty string", async () => {
+        const payload = { id: 1, a: "a", b: "b", c: "c" };
+
+        server.route({
+            method: "POST",
+            path: "/api/test",
+            handler: (request, h) => h.response("").code(204),
+        });
+
+        const res = await server.inject({
+            method: "POST",
+            url: "/api/test",
+            payload,
+        });
+
+        expect(res.statusCode).to.equal(204);
+        expect(auditError).to.be.null();
+
+        expect(auditEvent).to.equal({
+            application: "my-app",
+            type: "MUTATION",
+            body: {
+                entity: "test",
+                entityId: 1,
+                action: "CREATE",
+                username: "user",
+                originalValues: null,
+                newValues: payload,
+                timestamp: auditEvent.body.timestamp,
+            },
+            outcome: "Success",
+        });
+    });
 });

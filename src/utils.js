@@ -43,7 +43,7 @@ export default {
                 data,
                 action,
             }),
-    gotResponseData: (data) => data != null,
+    gotResponseData: (data) => data != null && data !== "",
     removeProps: (left, right, props) => {
         if (Array.isArray(props) && isObject(left) && isObject(right)) {
             props.forEach((key) => {

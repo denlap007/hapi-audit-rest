@@ -1,5 +1,9 @@
 # Changelog
 
+## v4.0.1
+
+On pre-response of a POST request when response.source.data is empty string use the request payload for audit record data (204 response status code from third party HTTP library i.e. axios).
+
 ## Breaking changes v4
 
 ### Node.js
