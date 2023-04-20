@@ -1,12 +1,16 @@
 # Changelog
 
+## v4.3.0
+
+Due to a problem, 4.2.0 was unpublished. The fixed new release was publiched again as 4.3.0.
+
 ## v4.2.0
 
 Separated cache logic from audit. Added response caching of any GET request with params, even if auditing of GET requests is disabled by the user.
 
 ## v4.1.0
 
-Added isAuditale on routeOptions, invoked with request as parameter.
+Added isAuditable on route Options, invoked with request as parameter.
 
 ## v4.0.1
 

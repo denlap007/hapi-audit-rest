@@ -145,7 +145,7 @@ exports.plugin = {
                         Utils.isSuccess(statusCode) &&
                         !Utils.isStream(resp) &&
                         !injected &&
-                        Object.keys(params) !== 0
+                        Object.keys(params).length !== 0
                     ) {
                         oldValsCache.set(Utils.toEndpoint("get", pathname), resp);
                     }
