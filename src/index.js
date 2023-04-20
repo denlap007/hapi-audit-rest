@@ -138,6 +138,19 @@ exports.plugin = {
                 } = request;
                 const { injected } = headers;
 
+                if (Utils.isRead(method)) {
+                    // cache response from GET request with params
+                    if (
+                        settings.isCacheEnabled &&
+                        Utils.isSuccess(statusCode) &&
+                        !Utils.isStream(resp) &&
+                        !injected &&
+                        Object.keys(params) !== 0
+                    ) {
+                        oldValsCache.set(Utils.toEndpoint("get", pathname), resp);
+                    }
+                }
+
                 // skip audit IF disabled on route, request not auditable, call failed, is injected GET request
                 if (
                     !Utils.isEnabled(routeOptions) ||
@@ -171,11 +184,6 @@ exports.plugin = {
                     Validate.assert(auditLog, Schemas.actionSchema);
 
                     const entityId = auditLog?.entityId || Utils.getId(params);
-
-                    // cache only GET by id response
-                    if (settings.isCacheEnabled && !Utils.isStream(resp) && !!entityId) {
-                        oldValsCache.set(getEndpoint, resp);
-                    }
 
                     auditLog = createAction({
                         entity: settings.setEntity(pathname),
