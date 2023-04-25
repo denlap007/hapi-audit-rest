@@ -17,10 +17,15 @@ internals.handleError = (settings, request, error) => {
     request.log(["error", internals.pluginName], error.message);
 };
 
-internals.fetchValues = async (
-    { server, headers, auth, url: { pathname }, method },
-    pathOverride
-) => {
+internals.fetchValues = async (request, pathOverride, hanleError) => {
+    const {
+        server,
+        headers,
+        auth,
+        url: { pathname },
+        method,
+    } = request;
+
     const {
         payload,
         statusCode,
@@ -33,7 +38,6 @@ internals.fetchValues = async (
         headers: { ...headers, injected: "true" },
         auth: auth.isAuthenticated ? auth : undefined,
     });
-    const routeEndpoint = Utils.toEndpoint(method, pathname);
 
     if (Utils.isSuccess(statusCode)) {
         let res = result;
@@ -42,15 +46,18 @@ internals.fetchValues = async (
             try {
                 res = JSON.parse(payload);
             } catch (error) {
-                console.warn(
-                    `Could not parse response paylod of injected request ${routeEndpoint}, will fallback to result. Reason: ${error.message}`
+                const endpoint = Utils.toEndpoint("get", pathOverride || pathname);
+                const err = new Error(
+                    `Could not parse response payload of injected request ${endpoint}, will fallback to result. Reason: ${error.message}`
                 );
+                hanleError(request, err);
             }
         }
 
         return res;
     }
 
+    const routeEndpoint = Utils.toEndpoint(method, pathname);
     throw new Error(
         `Could not fetch values for injected request get:${pathname} before ${routeEndpoint}: ${payload}`
     );
@@ -69,6 +76,8 @@ exports.plugin = {
         );
 
         if (!settings.isEnabled) return;
+
+        const hanleError = (req, err) => internals.handleError(settings, req, err);
 
         // initialize cache
         const oldValsCache = new Utils.ValuesCache();
@@ -125,15 +134,15 @@ exports.plugin = {
                     let oldVals = settings.isCacheEnabled ? oldValsCache.get(getEndpoint) : null;
 
                     if (oldVals == null) {
-                        oldVals = await internals.fetchValues(request, pathOverride);
+                        oldVals = await internals.fetchValues(request, pathOverride, hanleError);
                         oldValsCache.set(getEndpoint, oldVals);
                     }
                 } else if (Utils.isDelete(method)) {
-                    const oldVals = await internals.fetchValues(request, pathOverride);
+                    const oldVals = await internals.fetchValues(request, pathOverride, hanleError);
                     oldValsCache.set(getEndpoint, oldVals);
                 }
             } catch (error) {
-                internals.handleError(settings, request, error);
+                hanleError(request, error);
             }
 
             return h.continue;
@@ -233,7 +242,7 @@ exports.plugin = {
                     let newVals = Utils.isStream(reqPayload) ? null : Utils.clone(reqPayload);
 
                     if (newVals == null || routeOptions.fetchNewValues) {
-                        newVals = await internals.fetchValues(request, pathOverride);
+                        newVals = await internals.fetchValues(request, pathOverride, hanleError);
                     }
 
                     auditLog = await routeOptions.ext?.(request, {
@@ -306,7 +315,7 @@ exports.plugin = {
                     throw new Error(`Null auditLog record for endpoint: ${routeEndpoint}`);
                 }
             } catch (error) {
-                internals.handleError(settings, request, error);
+                hanleError(request, error);
             }
 
             return h.continue;

@@ -1,5 +1,9 @@
 # Changelog
 
+## v4.5.0
+
+Improve error hadling of injected requests to be processed by one standard handler.
+
 ## v4.4.0
 
 Improve handling on internal **injected** GET requests and response parsing. On application json try to parse response payload, if not possible fallback to result.
