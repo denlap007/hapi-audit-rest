@@ -1,5 +1,9 @@
 # Changelog
 
+## v4.4.0
+
+Improve handling on internal **injected** GET requests and response parsing. On application json try to parse response payload, if not possible fallback to result.
+
 ## v4.3.0
 
 Due to a problem, 4.2.0 was unpublished. The fixed new release was publiched again as 4.3.0.

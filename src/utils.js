@@ -18,6 +18,8 @@ export default {
     toEndpoint: (method, path, getPath) => (getPath ? `${method}:${getPath}` : `${method}:${path}`),
     isSuccess: (code) =>
         Number.isInteger(code) && parseInt(code, 10) >= 200 && parseInt(code, 10) <= 299,
+    isJsonResponse: ({ "content-type": contentType = "" }) =>
+        contentType.includes("application/json"),
     initMutation:
         ({ method, clientId, username }) =>
         ({ entity, entityId, action, originalValues, newValues }) =>

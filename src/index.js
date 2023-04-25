@@ -21,19 +21,36 @@ internals.fetchValues = async (
     { server, headers, auth, url: { pathname }, method },
     pathOverride
 ) => {
-    const { payload, statusCode } = await server.inject({
+    const {
+        payload,
+        statusCode,
+        result,
+        headers: responseHeaders = {},
+    } = await server.inject({
         validate: true,
         method: "GET",
         url: pathOverride || pathname,
         headers: { ...headers, injected: "true" },
         auth: auth.isAuthenticated ? auth : undefined,
     });
+    const routeEndpoint = Utils.toEndpoint(method, pathname);
 
     if (Utils.isSuccess(statusCode)) {
-        return JSON.parse(payload);
+        let res = result;
+
+        if (Utils.isJsonResponse(responseHeaders)) {
+            try {
+                res = JSON.parse(payload);
+            } catch (error) {
+                console.warn(
+                    `Could not parse response paylod of injected request ${routeEndpoint}, will fallback to result. Reason: ${error.message}`
+                );
+            }
+        }
+
+        return res;
     }
 
-    const routeEndpoint = Utils.toEndpoint(method, pathname);
     throw new Error(
         `Could not fetch values for injected request get:${pathname} before ${routeEndpoint}: ${payload}`
     );
