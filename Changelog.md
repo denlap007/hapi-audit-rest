@@ -1,5 +1,9 @@
 # Changelog
 
+## v4.6.0
+
+Added `allowInternals: true` for injected requests, allows access to routes with options.isInternal set to true.
+
 ## v4.5.0
 
 Improve error hadling of injected requests to be processed by one standard handler.

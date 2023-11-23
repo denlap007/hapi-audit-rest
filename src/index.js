@@ -37,6 +37,7 @@ internals.fetchValues = async (request, pathOverride, hanleError) => {
         url: pathOverride || pathname,
         headers: { ...headers, injected: "true" },
         auth: auth.isAuthenticated ? auth : undefined,
+        allowInternals: true,
     });
 
     if (Utils.isSuccess(statusCode)) {
