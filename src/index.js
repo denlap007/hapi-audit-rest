@@ -117,8 +117,8 @@ exports.plugin = {
                 if (
                     !Utils.isEnabled(routeOptions) ||
                     Utils.isRead(method) ||
-                    !settings.isAuditable(request) ||
                     routeOptions.isAction ||
+                    (!settings.isAuditable(request) && routeOptions.isAuditable == null) ||
                     !!(routeOptions.isAuditable != null && !routeOptions.isAuditable(request))
                 ) {
                     return h.continue;
@@ -177,13 +177,23 @@ exports.plugin = {
                         oldValsCache.set(Utils.toEndpoint("get", pathname), resp);
                     }
                 }
+                console.log(`evaluate 1`, !settings.isAuditable(request));
+                console.log(
+                    `evaluate 2`,
+                    !!(routeOptions.isAuditable != null && !routeOptions.isAuditable(request))
+                );
+                console.log(
+                    `evaluate 3`,
+                    !settings.isAuditable(request) &&
+                        !!(routeOptions.isAuditable != null && !routeOptions.isAuditable(request))
+                );
 
                 // skip audit IF disabled on route, request not auditable, call failed, is injected GET request
                 if (
                     !Utils.isEnabled(routeOptions) ||
-                    !settings.isAuditable(request) ||
                     !Utils.isSuccess(statusCode) ||
                     !!injected ||
+                    (!settings.isAuditable(request) && routeOptions.isAuditable == null) ||
                     !!(routeOptions.isAuditable != null && !routeOptions.isAuditable(request))
                 ) {
                     return h.continue;

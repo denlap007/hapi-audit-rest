@@ -444,4 +444,51 @@ describe("Route settings", () => {
         expect(auditError).to.be.null();
         expect(auditEvent).to.be.null();
     });
+
+    it("audits request if isAuditable on options returns false and isAuditable on route returns true", async () => {
+        const routePath = "/api/test/custom";
+        await server.register({
+            plugin,
+            options: {
+                eventHandler: (data) => {},
+                isAuditable: (request) => false,
+            },
+        });
+
+        server.events.on("hapi-audit-rest", ({ auditLog }) => {
+            auditEvent = auditLog;
+        });
+
+        server.route({
+            method: "GET",
+            path: routePath,
+            handler: (request, h) => "OK",
+            options: {
+                plugins: {
+                    "hapi-audit-rest": { isAuditable: (request) => true },
+                },
+            },
+        });
+
+        const res = await server.inject({
+            method: "get",
+            url: routePath,
+        });
+
+        expect(res.statusCode).to.equal(200);
+        expect(auditError).to.be.null();
+        expect(auditEvent).to.equal({
+            application: "my-app",
+            type: "SEARCH",
+            body: {
+                entity: "/api/test/custom",
+                entityId: null,
+                action: "SEARCH",
+                username: null,
+                timestamp: auditEvent.body.timestamp,
+                data: {},
+            },
+            outcome: "Success",
+        });
+    });
 });
